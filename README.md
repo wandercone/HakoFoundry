@@ -1,10 +1,10 @@
 # Hako Foundry
 
-A server chassis storage companion app that organizes and displays hard drive SMART data with integrated power management.
+A server chassis storage companion app that organizes and displays hard drive SMART data with powering monitoring for your Hako-Core.
 
 ## Overview
 
-Hako Foundry is a containerized application that combines drive health monitoring through SMART data analysis with hardware control capabilities via the Hako Core Powerboard. The application can function without the Hako Core Powerboard. If no powerboard is connected, you'll still have access to drive organization and SMART data monitoring. Primary development and testing is performed on TrueNAS Scale, though the application should work on other Docker-capable systems.
+Hako Foundry is a containerized application that combines drive health monitoring through SMART data analysis with hardware control capabilities via the Hako-Core Powerboard. If no powerboard is connected, you will still have access to drive organization and SMART data monitoring. Primary development and testing is performed on TrueNAS Scale, though the application should work on other Docker-capable systems.
 
 ## Features
 

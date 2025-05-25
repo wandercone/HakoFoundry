@@ -44,7 +44,8 @@ sudo docker run -d \
   hakoforge/hako-foundry
 ```
 
-Once the server is running, head over to the 
+Once the server is running, head over to the port that was configured and organize your drives. 
+Add backplanes, select drives. Click on the drive banner on the top right to remove a drive. Right click on backplanes to remove them. Click on the fans to control them.
 
 ### Command Breakdown
 
@@ -61,7 +62,7 @@ Once the server is running, head over to the
 - **Authentication**: `-e ADMIN_USERNAME` and `-e ADMIN_PASSWORD` - Optional login credentials
 - **Port Mapping**: `-p 8080:8080` - Maps container port to host system
 - **Running in the Background**: `-d` - Runs the container in detached mode so it doesn't stop when the shell stops. Alternatively, you can use `tmux` or `screen`
--  
+
 ## Roadmap
 
 ### Planned Features

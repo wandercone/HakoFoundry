@@ -17,12 +17,12 @@ Hako Foundry is a containerized application that combines drive health monitorin
 
 ### Quick Start
 
-Choose one of the following commands based on whether you want authentication:
+Once your TrueNAS has configured a pool for apps, head to the shell and choose one of the following commands based on whether you want authentication:
 
 **With Authentication:**
 Replace 'admin' and 'pass' with your own credentials. 
 ```bash
-docker run \
+sudo docker run -d \
   $(ls /dev/ttyACM* | sed 's/^/--device /') \
   $(lsblk -d -n -o NAME | grep '^sd' | sed 's|^|--device /dev/|') \
   --cap-add SYS_RAWIO \
@@ -35,7 +35,7 @@ docker run \
 
 **Without Authentication (Open Access):**
 ```bash
-docker run \
+sudo docker run -d \
   $(ls /dev/ttyACM* | sed 's/^/--device /') \
   $(lsblk -d -n -o NAME | grep '^sd' | sed 's|^|--device /dev/|') \
   --cap-add SYS_RAWIO \
@@ -43,6 +43,8 @@ docker run \
   -p 8080:8080 \
   hakoforge/hako-foundry
 ```
+
+Once the server is running, head over to the 
 
 ### Command Breakdown
 
@@ -58,7 +60,8 @@ docker run \
 - **Persistent Storage**: `-v foundry_config:/app/config/` - Creates a Docker volume to preserve configuration between restarts
 - **Authentication**: `-e ADMIN_USERNAME` and `-e ADMIN_PASSWORD` - Optional login credentials
 - **Port Mapping**: `-p 8080:8080` - Maps container port to host system
-
+- **Running in the Background**: `-d` - Runs the container in detached mode so it doesn't stop when the shell stops. Alternatively, you can use `tmux` or `screen`
+-  
 ## Roadmap
 
 ### Planned Features

@@ -88,6 +88,7 @@ Fan profiles are made on the *fan curve* page. There can be multiple fan profile
 - **Long-term Data Logging**: Historical tracking of drive attributes and power usage
 - **Advanced Analytics**: Trend analysis and predictive maintenance alerts
 - **Enhanced Graphs**: Visual representation of performance metrics over time
+- **Powerboard Updates**: Built in firmware updates
 
 ## Support & Contributing
 

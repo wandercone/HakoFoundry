@@ -2,3 +2,5 @@
 nicegui
 pyserial
 xxhash
+passlib[bcrypt]
+numpy

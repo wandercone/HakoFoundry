@@ -1,12 +1,80 @@
 import serial
+import numpy as np
 import threading
+import logging
 from typing import Tuple, Optional
+
+# Configure logging
+logger = logging.getLogger("foundry_logger")
 
 
 class PowerboardError(Exception):
     """Custom exception for Powerboard communication errors."""
     pass
 
+
+# ---2.2 Wattage Calculation Helpers---
+# This dictionary stores the manual offsets derived from test data.
+# Structure: {active_shunt_index: {expected_wattage: [s1_offset, s2_offset, s3_offset, s4_offset]}}
+MANUAL_OFFSETS = {
+    0: {  # Shunt 1 active
+        108: [1, 0, 0, 0], 120: [1, 0, 0, 0], 132: [1, 0, 0, 0],
+        144: [13, 0, 0, 0], 156: [13, 0, 0, 0], 168: [1, 0, 0, 0],
+    },
+    1: {  # Shunt 2 active
+        24: [0, 1, 0, 0], 36: [0, 1, 0, 0], 48: [0, 1, 0, 0], 60: [0, 1, 0, 0],
+        72: [0, 1, -1, 0], 84: [0, 1, -1, 0], 96: [0, 1, -1, 0], 108: [0, 1, -1, 0],
+        120: [0, 1, -2, 0], 132: [0, 1, -2, 0], 144: [0, 1, -2, 0], 156: [0, 1, -2, 0],
+        168: [0, 1, -2, 0],
+    },
+    2: {  # Shunt 3 active
+        24: [0, 0, 1, 0], 36: [0, 0, 1, 0], 48: [0, 0, 1, 0],
+        60: [0, -1, 1, 0], 72: [0, -1, 1, 0], 84: [0, -1, 1, 0], 96: [0, -1, 1, 0],
+        108: [0, -1, 1, 0], 120: [0, -2, 1, 0], 132: [0, -2, 1, 0],
+        144: [0, -2, -11, 0], 156: [0, -2, 1, 0], 168: [0, -3, 1, 0],
+    },
+    3: {  # Shunt 4 active
+        12: [0, 0, 0, 1], 24: [0, 0, 0, 1], 36: [0, 0, 0, 1], 48: [0, 0, 0, 1],
+        60: [0, 0, 0, 1], 72: [0, 0, 0, 1], 84: [0, 0, 0, 1], 96: [0, 0, 0, 1],
+        108: [0, 0, 0, 1], 120: [0, 0, 0, 1], 132: [0, 0, 0, 1], 144: [0, 0, 0, 1],
+        156: [0, 0, 0, 1], 168: [0, 0, 0, 1],
+    }
+}
+
+def _apply_manual_offsets_22(wattages: np.ndarray) -> np.ndarray:
+    """Apply final manual correction based on a lookup table of known errors."""
+    active_shunt_index = int(np.argmax(wattages))
+    active_wattage = int(wattages[active_shunt_index])
+
+    # Find the closest expected wattage level (multiple of 12)
+    expected_wattage_key = int(round(active_wattage / 12.0) * 12)
+
+    # Lookup offset; default to zeros if not present
+    offset = MANUAL_OFFSETS.get(active_shunt_index, {}).get(expected_wattage_key, [0, 0, 0, 0])
+    return wattages + np.array(offset)
+
+def _calculate_wattage_22(r1: float, r2: float, r3: float, r4: float, voltage: float = 12.0) -> list:
+    """High-accuracy multivariate regression wattage calculation for HW 2.2.
+
+    Returns a list of ints (wattages for shunts 1-4).
+    """
+    coefficients = np.array([
+        [ 2.11e-02,  1.06e-03, -1.43e-06, -1.31e-06, -1.21e-06, -1.30e-09, -1.42e-09, -1.61e-09, -1.11e-10, -1.23e-10, -1.45e-10],
+        [-2.23e-02, -1.21e-06,  1.06e-03, -1.11e-06, -1.01e-06, -1.21e-09, -1.31e-09, -1.43e-09, -1.21e-10, -1.33e-10, -1.55e-10],
+        [-2.45e-02, -1.01e-06, -1.31e-06,  1.06e-03, -9.10e-07, -1.11e-09, -1.21e-09, -1.31e-09, -1.31e-10, -1.43e-10, -1.65e-10],
+        [-2.81e-02, -8.10e-07, -1.11e-06, -1.21e-06,  1.06e-03, -1.01e-09, -1.11e-09, -1.21e-09, -1.41e-10, -1.53e-10, -1.75e-10]
+    ])
+    features = np.array([1, r1, r2, r3, r4, r1*r2, r1*r3, r1*r4, r2*r3, r2*r4, r3*r4])
+    corrected_currents = coefficients @ features
+    initial_wattages = voltage * corrected_currents
+
+    # Round and clamp negative values to 0
+    rounded_wattages = np.round(initial_wattages).astype(int)
+    rounded_wattages[rounded_wattages < 0] = 0
+
+    # Apply final manual offset correction
+    final_wattages = _apply_manual_offsets_22(rounded_wattages)
+    return final_wattages.astype(int).tolist()
 
 class Powerboard:
     """
@@ -50,14 +118,21 @@ class Powerboard:
         
         self._read_initial_metadata()
         self._read_initial_pwm_state()
+        # Set the fan speed to the eeprom values
+        self.update_fan_speed(self._current_fan_pwm[0], self._current_fan_pwm[1], self._current_fan_pwm[2])
+        
         
         # Calibration constants
         if self._hardware_rev == '2.0':
             self.ADC_SLOPE = 3.574
-            self.ADC_INTERCEPT = -1.375 
-        elif self._hardware_rev == '2.1' or self._hardware_rev == '2.1b':
+            self.ADC_INTERCEPT = -1.375
+        elif self._hardware_rev.startswith('2.1'):
             self.ADC_SLOPE = 3.284
             self.ADC_INTERCEPT = -1.069 
+        elif self._hardware_rev.startswith('2.2'):
+            self.ADC_SLOPE = 3.284
+            self.ADC_INTERCEPT = -1.069 
+        
         
         # Initialize other state variables
         self._current_fan_rpm: Optional[Tuple[int, int, int]] = None
@@ -107,11 +182,15 @@ class Powerboard:
             pwm_values = [int(x) for x in response.split(',')]
             if len(pwm_values) != 3:
                 raise ValueError("Expected 3 PWM values")
-                
             # Convert from 0-255 to percentage
-            pin1_pwm = self._convert_pwm_to_percent(pwm_values[0])
-            pin2_pwm = self._convert_pwm_to_percent(pwm_values[1])
-            pin3_pwm = self._convert_pwm_to_percent(pwm_values[2])
+            if self.firmware_version == '2.3':
+                pin1_pwm = self._convert_pwm_to_percent(255 - pwm_values[0])
+                pin2_pwm = self._convert_pwm_to_percent(255 - pwm_values[1])
+                pin3_pwm = self._convert_pwm_to_percent(255 - pwm_values[2])
+            else:
+                pin1_pwm = self._convert_pwm_to_percent(pwm_values[0])
+                pin2_pwm = self._convert_pwm_to_percent(pwm_values[1])
+                pin3_pwm = self._convert_pwm_to_percent(pwm_values[2])
             
             # Rearrange to represent (row1, row2, row3) respectively
             self._current_fan_pwm = (pin3_pwm, pin1_pwm, pin2_pwm)
@@ -173,7 +252,7 @@ class Powerboard:
             params = f"{row2},{row3},{row1}"
             response = self._send_command(self.COMMANDS['set_fan_speed'], params)
             
-            print(f"Set fan speed response: {response}")
+            logger.debug(f"Set fan speed response: {response}")
             self._current_fan_pwm = (row1, row2, row3)
             self._saved_fan_pwm = (row1, row2, row3)
 
@@ -191,10 +270,13 @@ class Powerboard:
         
         with self.semaphore:
             # Rearrange parameters to match hardware layout
-            params = f"{row2},{row3},{row1}"
+            if self.firmware_version == '2.2':
+                params = f"{100 - row2},{100 - row3},{100 - row1}"
+            else:
+                params = f"{row2},{row3},{row1}"
             response = self._send_command(self.COMMANDS['update_fan_speed'], params)
             
-            print(f"Update fan speed response: {response}")
+            logger.debug(f"Update fan speed response: {response}")
             self._running_fan_pwm = (row1, row2, row3)
 
     def get_board_metadata(self) -> Tuple[str, str, str]:
@@ -308,19 +390,20 @@ class Powerboard:
             analog_readings = [float(x) for x in response.split(',')]
             if len(analog_readings) != 4:
                 raise ValueError("Expected 4 analog readings")
-                
-            # Calculate wattage for each channel
-            wattages = []
-
-            for reading in analog_readings:
-                if reading == 0:
-                    current = 0
-                else:
-                    # Slop formula that compensates for low and high values
-                    current = (reading - self.ADC_INTERCEPT) / self.ADC_SLOPE
-
-                wattage = current * self.TARGET_VOLTAGE
-                wattages.append(wattage)
+            # Use new high-accuracy calculation for HW 2.2 variants
+            if str(self._hardware_rev).startswith('2.2'):
+                r1, r2, r3, r4 = analog_readings
+                wattages = _calculate_wattage_22(r1, r2, r3, r4, voltage=self.TARGET_VOLTAGE)
+            else:
+                # Calculation for other hardware revisions
+                wattages = []
+                for reading in analog_readings:
+                    if reading == 0:
+                        current = 0
+                    else:
+                        # Slope formula that compensates for low and high values
+                        current = (reading - self.ADC_INTERCEPT) / self.ADC_SLOPE
+                    wattages.append(current * self.TARGET_VOLTAGE)
 
             # Binded label varaibles
             # Swap indexes to represent physical sections

@@ -1,0 +1,22 @@
+.text-yellowhako {
+    color: #ffdd00 !important;
+}
+
+.bg-yellowhako {
+    color: #ffdd00 !important;
+} 
+
+.q-drawer {
+    transition-property: all;
+    transition-duration: 200ms;
+    transition-timing-function: ease-in-out;
+}
+
+.q-drawer-container:not(.q-drawer--mini-animate) .q-drawer--mini .q-item{
+    justify-content: left;
+    padding-left: 16px;
+}
+
+.nicegui-content {
+    padding: 0 !important;
+}

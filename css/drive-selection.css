@@ -1,0 +1,10 @@
+.pseudo-extend-drives {
+    --base-color: #303030;
+    --border-color: #252525;
+    --boarder-thickness: 5px;
+    background: var(--base-color);
+    color: white;
+    border: var(--boarder-thickness) solid var(--border-color);
+    border-radius: 15px;
+    padding: 20px;
+}

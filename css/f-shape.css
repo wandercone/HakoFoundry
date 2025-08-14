@@ -1,0 +1,118 @@
+/* F-Shape CSS for chassis layout components */
+
+/* The main container for the F-shape */
+.f-shape {
+    --f-radius: 0.6em; /* Updated default radius from new example */
+
+    width: 87%; /* From new example (87% * 1.15 approx 100% of wrapper for arms) */
+    height: 87%; /* From new example */
+    aspect-ratio: 1; /* Keep it square */
+    margin: 0;
+    background-color: #171717; /* Updated from new example */
+    position: relative;
+    border-radius: 0.3em; /* Use the variable for consistency */
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0%; /* Updated from new example */
+    box-sizing: border-box;
+    
+    container-type: inline-size; 
+}
+
+/* The top horizontal bar of the "F" */
+.f-shape::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 115%; 
+    height: 20%; 
+    background-color: #171717; /* Updated from new example */
+    border-radius: var(--f-radius); /* Updated from new example */
+    z-index: -1; 
+}
+
+/* The middle horizontal bar of the "F" */
+.f-shape::after {
+    content: "";
+    position: absolute;
+    top: 60%; 
+    left: 0;
+    width: 115%; 
+    height: 20%;
+    background-color: #171717; /* Updated from new example */
+    border-radius: var(--f-radius); /* Updated from new example */
+    z-index: -1; 
+}
+
+/* --- CSS for Extending Patches --- */
+.extension-patch {
+    position: absolute;
+    background-color: #171717; /* Match new F-shape color */
+    overflow: hidden; 
+    z-index: 0; 
+    width: var(--f-radius); 
+    height: var(--f-radius); 
+}
+
+/* Common style for the circular scoop pseudo-element */
+.extension-patch::after {
+    content: "";
+    position: absolute;
+    width: calc(var(--f-radius) * 2); 
+    height: calc(var(--f-radius) * 2); 
+    background-color: #303030; /* Body background for scoop */
+    border-radius: 50%; 
+    z-index: 1; 
+}
+
+.patch-top-arm-bottom {
+    top: 20%; 
+    left: 100%; 
+}
+.patch-top-arm-bottom::after {
+    bottom: calc(var(--f-radius) * -1); 
+    right: calc(var(--f-radius) * -1);
+}
+
+.patch-mid-arm-top {
+    top: 60%; 
+    left: 100%; 
+    transform: translateY(-100%); 
+}
+.patch-mid-arm-top::after {
+    top: calc(var(--f-radius) * -1); 
+    right: calc(var(--f-radius) * -1);
+}
+
+.patch-mid-arm-bottom {
+    top: calc(60% + 20%); 
+    left: 100%; 
+}
+.patch-mid-arm-bottom::after {
+    bottom: calc(var(--f-radius) * -1); 
+    right: calc(var(--f-radius) * -1);
+}
+/* --- End of CSS for Extending Patches --- */
+
+/* Container queries for F-shape based on ITS OWN width */
+@container (max-width: 200px) { /* Breakpoint from new example */
+    .f-shape {
+        padding: 3%; /* Padding from new example */
+        /* --f-radius is now globally 0.08em and not changed here */
+    }
+    /* Button styles are now primarily handled by clamp() */
+}
+
+/* Removed the (min-width: 200px) and (max-width: 300px) query */
+
+@container (min-width: 400px) { /* Breakpoint from new example */
+    .f-shape {
+        padding: 8%; /* Padding from new example */
+        /* --f-radius is now globally 0.08em and not changed here */
+    }
+    /* Button styles are now primarily handled by clamp() */
+}

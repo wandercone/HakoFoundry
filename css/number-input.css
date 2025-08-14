@@ -1,0 +1,19 @@
+.number-input {
+    -moz-appearance: textfield;
+    appearance: textfield;
+    background-color: #1d1d1d !important; /* Consistent dark background */
+    color: #ffffff !important; /* White text */
+    border-color: #4b5563 !important; /* Gray-600 border */
+}
+
+.number-input::-webkit-outer-spin-button,
+.number-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.number-input:focus {
+    border-color: #3b82f6 !important; /* Blue border on focus */
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important; /* Blue glow */
+}

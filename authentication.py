@@ -1,53 +1,134 @@
 import logging
-from nicegui import ui, app
+import json
 import os
+import stat
 import secrets
 import time
-from typing import Dict
+from typing import Dict, Optional
 from functools import wraps
+from nicegui import ui, app
+from passlib.context import CryptContext
 
 # Configure logging
 logger = logging.getLogger("foundry_logger")
 
-def load_auth_from_env() -> Dict[str, str]:
-    """Load authentication credentials from environment variables."""
-    auth_users = {}
- 
-    # Check environment variables first
-    admin_user = os.getenv('ADMIN_USERNAME')
-    admin_pass = os.getenv('ADMIN_PASSWORD')
-    
-    if admin_user and admin_pass:
-        auth_users[admin_user] = admin_pass
-    
-    # Multi-user configuration (AUTH_USER_1, AUTH_PASS_1, etc.)
-    i = 1
-    while True:
-        user_var = f'AUTH_USER_{i}'
-        pass_var = f'AUTH_PASS_{i}'
-        
-        username = os.getenv(user_var)
-        password = os.getenv(pass_var)
-        
-        if username and password:
-            auth_users[username] = password
-            i += 1
-        else:
-            break
-    
-    return auth_users
+# Initialize password context for hashing
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-AUTH_USERS = load_auth_from_env()
+# Config file for user storage
+USER_CONFIG_FILE = "config/user_config.json"
+
+# Enable open access mode (skip authentication)
+OPEN_ACCESS_MODE = os.getenv('OPEN_ACCESS', 'false').lower() in ('true', '1', 'yes', 'on')
+
+class UserManager:
+    """Manages user authentication and storage."""
+    
+    def __init__(self):
+        self.config_file = USER_CONFIG_FILE
+        self._ensure_config_dir()
+    
+    def _ensure_config_dir(self):
+        """Ensure config directory exists."""
+        config_dir = os.path.dirname(self.config_file)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+    
+    def _load_user_config(self) -> Dict:
+        """Load user configuration from file."""
+        try:
+            if os.path.exists(self.config_file):
+                with open(self.config_file, 'r') as f:
+                    return json.load(f)
+            return {}
+        except Exception as e:
+            logger.error(f"Error loading user config: {e}")
+            return {}
+    
+    def _save_user_config(self, config: Dict):
+        """Save user configuration to file with restrictive permissions."""
+        try:
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=4)
+            
+            # Set restrictive permissions (owner read/write only - 600)
+            # This prevents other users on the system from reading the hash file
+            try:
+                os.chmod(self.config_file, stat.S_IRUSR | stat.S_IWUSR)
+                logger.debug(f"Set restrictive permissions (600) on {self.config_file}")
+            except OSError as perm_error:
+                logger.warning(f"Could not set file permissions: {perm_error}")
+            
+            logger.info("User configuration saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving user config: {e}")
+    
+    def user_exists(self) -> bool:
+        """Check if a user is already registered."""
+        config = self._load_user_config()
+        return 'username_hash' in config and 'password_hash' in config
+    
+    def register_user(self, username: str, password: str) -> bool:
+        """Register a new user (only if no user exists)."""
+        if self.user_exists():
+            logger.warning("User already exists, cannot register new user")
+            return False
+        
+        try:
+            # Hash both username and password
+            username_hash = pwd_context.hash(username)
+            password_hash = pwd_context.hash(password)
+            config = {
+                'username_hash': username_hash,
+                'password_hash': password_hash,
+                'created_at': time.time()
+            }
+            self._save_user_config(config)
+            
+            # Store in NiceGUI storage as well (store original username for display)
+            app.storage.general['user_registered'] = True
+            app.storage.general['username'] = username
+            
+            logger.info(f"User '{username}' registered successfully")
+            return True
+        except Exception as e:
+            logger.error(f"Error registering user: {e}")
+            return False
+    
+    def verify_credentials(self, username: str, password: str) -> bool:
+        """Verify username and password."""
+        config = self._load_user_config()
+        
+        if not config or 'username_hash' not in config or 'password_hash' not in config:
+            return False
+        
+        try:
+            # Verify both username and password hashes
+            username_valid = pwd_context.verify(username, config['username_hash'])
+            password_valid = pwd_context.verify(password, config['password_hash'])
+            
+            return username_valid and password_valid
+        except Exception as e:
+            logger.error(f"Error verifying credentials: {e}")
+            return False
+    
+    def get_username(self) -> Optional[str]:
+        """Get the registered username from NiceGUI storage."""
+        # Since username is now hashed in config, we get it from storage
+        # or return a placeholder if not available
+        try:
+            return app.storage.general.get('username', 'User')
+        except:
+            return 'User'
+
+# Global user manager instance
+user_manager = UserManager()
 
 valid_sessions: Dict[str, Dict] = {}  # session_token -> {username, created_at, last_seen}
 
 def verify_credentials(username: str, password: str) -> bool:
-    """Verify username and password against environment variables."""
-    if not AUTH_USERS:
-        logger.warning("No authentication credentials found in environment variables!")
-        return False
-        
-    return AUTH_USERS.get(username) == password
+    """Verify username and password using the user manager."""
+    return user_manager.verify_credentials(username, password)
 
 def get_session_token() -> str:
     """Get session token from browser storage (naturally isolated per browser)."""
@@ -66,10 +147,15 @@ def get_session_token() -> str:
 
 def is_authenticated() -> bool:
     """Check if current browser session is authenticated."""
-    # If no authentication is configured, allow open access
-    if not AUTH_USERS:
-        logger.debug("No authentication configured - allowing open access")
+    # Check for open access mode first
+    if OPEN_ACCESS_MODE:
+        logger.debug("Open access mode enabled - skipping authentication")
         return True
+    
+    # If no user is registered, redirect to registration
+    if not user_manager.user_exists():
+        logger.debug("No user registered - requiring registration")
+        return False
     
     try:
         # Get session token from THIS browser's storage
@@ -122,8 +208,12 @@ def logout_session():
 
 def get_current_user() -> str:
     """Get current authenticated username."""
-    # If no authentication configured, return generic user
-    if not AUTH_USERS:
+    # Check for open access mode first
+    if OPEN_ACCESS_MODE:
+        return 'Guest (Open Access)'
+    
+    # If no user registered, return guest
+    if not user_manager.user_exists():
         return 'Guest'
     
     try:
@@ -160,8 +250,8 @@ def create_login_page():
         
         logger.info(f"Login attempt: {username}")
         
-        if not AUTH_USERS:
-            error_label.text = 'Authentication not configured. Check environment variables.'
+        if not user_manager.user_exists():
+            error_label.text = 'No user registered. Please register first.'
             error_label.visible = True
             return
         
@@ -177,11 +267,46 @@ def create_login_page():
             error_label.visible = True
             password_input.value = ''
     
+    def handle_register_redirect():
+        """Redirect to registration page."""
+        ui.navigate.to('/register')
+    
     with ui.column().classes('absolute-center'):
         with ui.card().classes('p-8').style('width: 30vw'):
             with ui.row().classes('w-full'):
                 with ui.link(target='http://hakoforge.com', new_tab=True).classes('w-full'):
                     ui.image('res/Foundry_Logo.png')
+                
+                # Show different content based on whether user exists
+                if not user_manager.user_exists():
+                    ui.label('No user registered').classes('text-center text-lg mb-4')
+                    ui.button('Register New User', on_click=handle_register_redirect).classes('w-full mb-4 border-solid border-2 border-[#ffdd00]').props('flat color="white"')
+                    
+                    # Show open access option if enabled
+                    if OPEN_ACCESS_MODE:
+                        ui.button('Skip Registration (Open Access)', 
+                                 on_click=lambda: ui.navigate.to('/overview')).classes('w-full mb-4 border-solid border-2 border-gray-400').props('flat color="gray"')
+                    
+                    # Add social media links and return early
+                    ui.space().classes('h-6')
+                    with ui.row().classes('justify-center w-full'):
+                        with ui.link(target='https://discord.com/invite/3kjpbmckgm'):
+                            ui.image('res/Discord_Icon.png').style('width: 50px')
+                        with ui.link(target='https://www.reddit.com/r/hakoforge/'):
+                            ui.image('res/Reddit_Icon.png').style('width: 50px')
+                        with ui.link(target='https://www.youtube.com/@HakoForge'):
+                            ui.image('res/YouTube_Icon.png').style('width: 50px')
+                        with ui.link(target='https://www.instagram.com/hakoforge'):
+                            ui.image('res/Instagram_Icon.png').style('width: 50px')
+                        with ui.link(target='https://twitter.com/HakoForge'):
+                            ui.image('res/X_Icon.png').style('width: 50px')
+                        with ui.link(target='https://www.tiktok.com/@hakoforge'):
+                            ui.image('res/TikTok_Icon.png').style('width: 50px')
+                        with ui.link(target='https://github.com/hakoforge'):
+                            ui.image('res/Git_Icon.png').style('width: 50px')
+                    return
+                
+                # Normal login form for existing user
                 username_input = ui.input('Username').classes('w-full mb-4')
                 password_input = ui.input('Password', password=True).classes('w-full mb-4')
                 
@@ -207,15 +332,133 @@ def create_login_page():
                 with ui.link(target='https://github.com/hakoforge'):
                     ui.image('res/Git_Icon.png').style('width: 50px')
 
+def create_registration_page():
+    """Create registration page UI for new user."""
+    
+    def handle_registration():
+        username = username_input.value.strip()
+        password = password_input.value
+        confirm_password = confirm_password_input.value
+        
+        # Validation
+        if not username:
+            error_label.text = 'Username is required'
+            error_label.visible = True
+            return
+        
+        if len(username) < 3:
+            error_label.text = 'Username must be at least 3 characters'
+            error_label.visible = True
+            return
+        
+        if not password:
+            error_label.text = 'Password is required'
+            error_label.visible = True
+            return
+        
+        if len(password) < 6:
+            error_label.text = 'Password must be at least 6 characters'
+            error_label.visible = True
+            return
+        
+        if password != confirm_password:
+            error_label.text = 'Passwords do not match'
+            error_label.visible = True
+            return
+        
+        # Check if user already exists
+        if user_manager.user_exists():
+            error_label.text = 'User already registered'
+            error_label.visible = True
+            return
+        
+        # Register user
+        if user_manager.register_user(username, password):
+            success_label.text = 'Registration successful! Redirecting to login...'
+            success_label.visible = True
+            error_label.visible = False
+            
+            # Redirect to login after 2 seconds
+            ui.timer(2.0, lambda: ui.navigate.to('/login'), once=True)
+        else:
+            error_label.text = 'Registration failed. Please try again.'
+            error_label.visible = True
+    
+    def handle_back_to_login():
+        """Go back to login if user exists."""
+        ui.navigate.to('/login')
+    
+    with ui.column().classes('absolute-center'):
+        with ui.card().classes('p-8').style('width: 30vw'):
+            with ui.row().classes('w-full'):
+                with ui.link(target='http://hakoforge.com', new_tab=True).classes('w-full'):
+                    ui.image('res/Foundry_Logo.png')
+                
+                ui.label('Register New User').classes('text-center text-xl mb-4')
+                
+                # Show open access option if enabled
+                if OPEN_ACCESS_MODE:
+                    ui.button('Skip Registration (Open Access)', 
+                             on_click=lambda: ui.navigate.to('/overview')).classes('w-full border-solid border-2 border-gray-400 mb-4').props('flat color="gray"')
+                
+                username_input = ui.input('Username').classes('w-full mb-4')
+                password_input = ui.input('Password', password=True).classes('w-full mb-4')
+                confirm_password_input = ui.input('Confirm Password', password=True).classes('w-full mb-4')
+                
+                error_label = ui.label('').classes('text-red-500 text-sm mb-4')
+                error_label.visible = False
+                
+                success_label = ui.label('').classes('text-green-500 text-sm mb-4')
+                success_label.visible = False
+                
+                ui.button('Register', on_click=handle_registration).classes('w-full border-solid border-2 border-[#ffdd00] mb-2').props('flat color="white"')
+                
+                # Show back to login button if user already exists
+                if user_manager.user_exists():
+                    ui.button('Back to Login', on_click=handle_back_to_login).classes('w-full border-solid border-2 border-gray-400').props('flat color="gray"')
+                
+                confirm_password_input.on('keydown.enter', handle_registration)
+                ui.space().classes('h-6')
+            
+            with ui.row().classes('justify-center w-full'):
+                with ui.link(target='https://discord.com/invite/3kjpbmckgm'):
+                    ui.image('res/Discord_Icon.png').style('width: 50px')
+                with ui.link(target='https://www.reddit.com/r/hakoforge/'):
+                    ui.image('res/Reddit_Icon.png').style('width: 50px')
+                with ui.link(target='https://www.youtube.com/@HakoForge'):
+                    ui.image('res/YouTube_Icon.png').style('width: 50px')
+                with ui.link(target='https://www.instagram.com/hakoforge'):
+                    ui.image('res/Instagram_Icon.png').style('width: 50px')
+                with ui.link(target='https://twitter.com/HakoForge'):
+                    ui.image('res/X_Icon.png').style('width: 50px')
+                with ui.link(target='https://www.tiktok.com/@hakoforge'):
+                    ui.image('res/TikTok_Icon.png').style('width: 50px')
+                with ui.link(target='https://github.com/hakoforge'):
+                    ui.image('res/Git_Icon.png').style('width: 50px')
+
 def require_auth(page_func):
     """Decorator to require authentication for a page."""
     @wraps(page_func)
     def wrapper(*args, **kwargs):
         logger.debug(f"Checking auth for {page_func.__name__}")
+        
+        # Check for open access mode first
+        if OPEN_ACCESS_MODE:
+            logger.debug("Open access mode enabled - bypassing authentication")
+            return page_func(*args, **kwargs)
+        
+        # If no user is registered, redirect to registration
+        if not user_manager.user_exists():
+            logger.debug("No user registered, redirecting to registration")
+            ui.navigate.to('/register')
+            return
+        
+        # If user exists but not authenticated, show login
         if not is_authenticated():
             logger.debug("Not authenticated, showing login")
             create_login_page()
             return
+            
         logger.debug(f"Authenticated, showing {page_func.__name__}")
         return page_func(*args, **kwargs)
     return wrapper
@@ -226,13 +469,16 @@ ui.timer(3600, lambda: cleanup_expired_sessions(24), active=True)  # Clean up ev
 # Startup validation
 def validate_environment() -> bool:
     """Validate environment configuration on startup."""
-    if not AUTH_USERS:
-        logger.warning("OPEN ACCESS MODE: No authentication credentials found!")
-        logger.warning("The site will be accessible without login.")
-        return False  # Return False to indicate no auth configured
+    if OPEN_ACCESS_MODE:
+        logger.warning("OPEN ACCESS MODE: Authentication disabled!")
+        logger.warning("The site is accessible without login.")
+        return False  # Return False to skip login page
+    elif not user_manager.user_exists():
+        logger.warning("REGISTRATION REQUIRED: No user registered!")
+        logger.warning("The site will require registration before access.")
+        return False  # Return False to indicate no user registered
     else:
-        logger.info(f"AUTHENTICATION ENABLED: {len(AUTH_USERS)} user(s) configured")
-        for username in AUTH_USERS.keys():
-            logger.info(f"   - {username}")
+        username = user_manager.get_username()
+        logger.info(f"AUTHENTICATION ENABLED: User '{username}' registered")
         logger.info("   Site is protected and requires login.")
-        return True  # Return True to indicate auth is configured
+        return True  # Return True to indicate user is registered

@@ -107,7 +107,6 @@ class Drive:
 
 class SmartCtlInterface:
     """Interface for smartctl operations."""
-    
     @staticmethod
     def execute_command(args: str, timeout: int = 30) -> str:
         """Execute smartctl command with timeout and error handling."""
@@ -120,7 +119,8 @@ class SmartCtlInterface:
                 text=True, 
                 timeout=timeout
             )
-            
+            if result.returncode == 127:
+                raise FoundryStateError("smartctl command not found. Please install smartmontools.")
             if result.returncode < 0:  # Negative return codes indicate serious errors
                 raise FoundryStateError(f"smartctl command failed: {result.stderr}")
             
@@ -256,7 +256,6 @@ class SmartCtlInterface:
     def _save_raw_data(model: str, json_output: str) -> None:
         """Save raw smartctl output for debugging."""
         try:
-            # Create safe filename
             safe_model = "".join(c for c in model if c.isalnum() or c in (' ', '-', '_')).rstrip()
             filename = f"{safe_model}_smartctl.json"
             
@@ -275,6 +274,9 @@ class DriveManager:
         self._last_scan_time: float = 0
         self._cache_duration = cache_duration
         self._debug = debug
+
+        if self._debug:
+            logger.setLevel(logging.DEBUG)
 
     def get_drives(self, force_refresh: bool = False) -> Dict[int, Drive]:
         """Get all drives with caching."""
@@ -435,17 +437,19 @@ class Backplane:
             "drives": self.drives_hashes
         }
 
-
 class Chassis:
     """Manages chassis layout and backplane configuration."""
     
-    DEFAULT_CONFIG_FILE = "config/foundryConfig.json"
+    DEFAULT_CONFIG_FILE = "config/layout_config.json"
     MAX_BACKPLANES = 12
     
     def __init__(self, config_file: Optional[str] = None):
         self.config_file = config_file or self.DEFAULT_CONFIG_FILE
         self.product: Optional[str] = None
         self.backplanes: List[Optional[Backplane]] = [None] * self.MAX_BACKPLANES
+        self.show_model = True
+        self.show_sn = True
+        self.hide_multi_curve_dialog = False  # User preference for multi-curve dialog
 
         if config_file:
             self._load_config()
@@ -455,15 +459,21 @@ class Chassis:
         try:
             config_path = Path(self.config_file)
             if not config_path.exists():
-                logger.info(f"Config file {self.config_file} not found, using defaults")
+                logger.info(f"Config file {self.config_file} not found, creating default config")
+                # Create default config and save it for future use
+                self.save_config()
                 return
 
             with open(config_path, "r", encoding='utf-8') as file:
-                config = json.load(file)
+                config:dict = json.load(file)
                 
             self.product = config.get("product")
             backplanes_data = config.get("backplanes", [])
-            
+            options = config.get("options", {})
+            self.show_model = options.get("show_model", True)
+            self.show_sn = options.get("show_sn", True)
+            self.hide_multi_curve_dialog = options.get("hide_multi_curve_dialog", False)
+
             # Ensure we have the right number of backplane slots
             while len(backplanes_data) < self.MAX_BACKPLANES:
                 backplanes_data.append(None)
@@ -500,10 +510,28 @@ class Chassis:
         self.product = product
         self.save_config()
 
+    def set_model_display(self, value):
+        """Set model display option."""
+        self.show_model = value
+        self.save_config()
+
+    def get_model_display(self):
+        """Set model display option."""
+        return self.show_model
+
+    def set_sn_display(self, value):
+        """Return serial number display option."""
+        self.show_sn = value
+        self.save_config()
+
+    def get_sn_display(self):
+        """Return model display option."""
+        return self.show_sn
+    
     def get_product(self) -> Optional[str]:
         """Get chassis product type."""
         return self.product
-
+    
     def insert_backplane(self, card, product: str) -> Backplane:
         """Insert backplane at specified card."""
         card_index = card.index if hasattr(card, 'index') else card
@@ -576,18 +604,17 @@ class Chassis:
         try:
             config_data = {
                 "product": self.product,
-                "backplanes": [bp.to_json() if bp is not None else None for bp in self.backplanes]
+                "backplanes": [bp.to_json() if bp is not None else None for bp in self.backplanes],
+                "options": {
+                    "show_model": self.show_model, 
+                    "show_sn": self.show_sn,
+                    "hide_multi_curve_dialog": self.hide_multi_curve_dialog
+                }
             }
             
-            # Create backup of existing config (overwrite existing backup)
+            # Ensure config directory exists
             config_path = Path(self.config_file)
-            if config_path.exists():
-                backup_path = config_path.with_suffix('.json.bak')
-                # Remove existing backup if it exists
-                if backup_path.exists():
-                    backup_path.unlink()
-                # Create new backup
-                config_path.rename(backup_path)
+            config_path.parent.mkdir(parents=True, exist_ok=True)
             
             with open(self.config_file, "w", encoding='utf-8') as file:
                 json.dump(config_data, file, indent=4)

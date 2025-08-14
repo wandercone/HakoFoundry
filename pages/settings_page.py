@@ -10,11 +10,37 @@ def settingsPage():
     # Use a mutable object to store the flag so it can be accessed in nested functions
     state_flags = {'ignoring_change': False}
     
+    # Store UI element references
+    ui_refs = {'model_switch': None, 'sn_switch': None}
+    
+    # Ensure at least one switch is on during initialization
+    if not globals.layoutState.get_model_display() and not globals.layoutState.get_sn_display():
+        # If both are off, turn on model display by default
+        globals.layoutState.set_model_display(True)
+    
     def change_product(new_product):
         """Change the chassis product and reset layout."""
         globals.layoutState.reset_chassis()
         globals.layoutState.set_product(new_product)
-    
+
+    def change_model_display(value):
+        # If turning off model display, ensure SN display is on
+        if not value and not globals.layoutState.get_sn_display():
+            globals.layoutState.set_sn_display(True)
+            # Update the SN switch UI
+            if ui_refs['sn_switch']:
+                ui_refs['sn_switch'].set_value(True)
+        globals.layoutState.set_model_display(value)
+
+    def change_sn_display(value):
+        # If turning off SN display, ensure model display is on
+        if not value and not globals.layoutState.get_model_display():
+            globals.layoutState.set_model_display(True)
+            # Update the model switch UI
+            if ui_refs['model_switch']:
+                ui_refs['model_switch'].set_value(True)
+        globals.layoutState.set_sn_display(value)
+
     def handle_product_change(e):
         """Handle product selection change."""
         # Ignore programmatic changes
@@ -94,26 +120,148 @@ def settingsPage():
             row_key='location'
         ).classes('w-full')
     
+    def get_pwm_values():
+        """Get current saved PWM values from powerboards."""
+        pwm_data = {}
+        
+        # Get powerboard 1 PWM values
+        if 1 in globals.powerboardDict:
+            pb1_pwm = globals.powerboardDict[1].get_saved_fan_pwm()
+            pwm_data['pb1'] = {
+                'row1': pb1_pwm[0],
+                'row2': pb1_pwm[1], 
+                'row3': pb1_pwm[2]
+            }
+        
+        # Get powerboard 2 PWM values
+        if 2 in globals.powerboardDict:
+            pb2_pwm = globals.powerboardDict[2].get_saved_fan_pwm()
+            pwm_data['pb2'] = {
+                'aux': pb2_pwm[2]  # Use third value for auxiliary
+            }
+        
+        return pwm_data
+    
+    def create_pwm_settings():
+        """Create PWM settings interface."""
+        pwm_data = get_pwm_values()
+        
+        if not pwm_data:
+            return ui.label('No powerboards detected for PWM settings.').classes('text-gray-500 italic')
+        
+        # Store PWM input references
+        pwm_inputs = {}
+        
+        async def apply_pwm_settings():
+            """Apply the PWM settings using fan control service."""
+            try:
+                # Get values from inputs
+                pb1_values = [0, 0, 0]
+                pb2_aux = 100
+                
+                if 'pb1' in pwm_data:
+                    pb1_values[0] = int(pwm_inputs['pb1_row1'].value)
+                    pb1_values[1] = int(pwm_inputs['pb1_row2'].value)
+                    pb1_values[2] = int(pwm_inputs['pb1_row3'].value)
+                
+                if 'pb2' in pwm_data:
+                    pb2_aux = int(pwm_inputs['pb2_aux'].value)
+                
+                # Use fan control service to set the speeds
+                await globals.fan_control_service.set_fan_speed(
+                    pb1_values[0], pb1_values[1], pb1_values[2], pb2_aux
+                )
+                
+                ui.notify("PWM settings applied successfully!", 
+                         position='bottom-right', type='positive', group=False)
+                
+            except Exception as e:
+                ui.notify(f"Error applying PWM settings: {str(e)}", 
+                         position='bottom-right', type='negative', group=False)
+        
+        with ui.column().classes('w-full gap-4'):
+            # Powerboard 1 settings
+            if 'pb1' in pwm_data:
+                with ui.card().classes('w-full'):
+                    ui.label('Powerboard 1 - Fan Rows').classes('text-lg font-semibold mb-2')
+                    with ui.grid(columns=3).classes('gap-4 w-full'):
+                        with ui.column().classes('items-center gap-2'):
+                            ui.label('Row 1 PWM')
+                            pwm_inputs['pb1_row1'] = ui.slider(
+                                min=0, max=100, step=1,
+                                value=int(pwm_data['pb1']['row1'])
+                            ).classes('w-32')
+                            ui.label().bind_text_from(pwm_inputs['pb1_row1'], 'value', lambda v: f'{int(v)}%')
+                        
+                        with ui.column().classes('items-center gap-2'):
+                            ui.label('Row 2 PWM')
+                            pwm_inputs['pb1_row2'] = ui.slider(
+                                min=0, max=100, step=1,
+                                value=int(pwm_data['pb1']['row2'])
+                            ).classes('w-32')
+                            ui.label().bind_text_from(pwm_inputs['pb1_row2'], 'value', lambda v: f'{int(v)}%')
+                        
+                        with ui.column().classes('items-center gap-2'):
+                            ui.label('Row 3 PWM')
+                            pwm_inputs['pb1_row3'] = ui.slider(
+                                min=0, max=100, step=1,
+                                value=int(pwm_data['pb1']['row3'])
+                            ).classes('w-32')
+                            ui.label().bind_text_from(pwm_inputs['pb1_row3'], 'value', lambda v: f'{int(v)}%')
+            
+            # Powerboard 2 settings (show only if exists)
+            if 'pb2' in pwm_data:
+                with ui.card().classes('w-full'):
+                    ui.label('Powerboard 2 - Auxiliary Fans').classes('text-lg font-semibold mb-2')
+                    with ui.column().classes('items-center gap-2 w-full'):
+                        ui.label('Auxiliary PWM')
+                        pwm_inputs['pb2_aux'] = ui.slider(
+                            min=0, max=100, step=1,
+                            value=int(pwm_data['pb2']['aux'])
+                        ).classes('w-64')
+                        ui.label().bind_text_from(pwm_inputs['pb2_aux'], 'value', lambda v: f'{int(v)}%')
+            
+            # Apply button
+            with ui.row().classes('justify-center w-full mt-4'):
+                ui.button(
+                    'Apply PWM Settings', 
+                    on_click=apply_pwm_settings
+                ).classes('border-solid border-2 border-[#ffdd00] text-white px-6 py-2').props('flat')
+    
     # Main settings UI
     with page_layout.frame('Settings'):
-        with ui.card().classes('absolute-center') as main_content:
-            # Chassis Layout Section
-            ui.label('Chassis Configuration').classes('text-xl font-bold mb-4')
-            
-            with ui.row().classes('items-center gap-4 mb-6'):
-                ui.label('Chassis Layout:').classes('font-medium')
-                product_select = ui.select(
-                    ['Hako-Core', 'Hako-Core Mini'], 
-                    value=globals.layoutState.get_product(), 
-                    on_change=handle_product_change
-                ).classes('w-full')
-            
-            ui.separator().classes('mb-6')
-            
-            # Powerboard Information Section
-            with ui.column().classes('w-full') as powerboard_container:
-                ui.label('Powerboard Information').classes('text-xl font-bold mb-4')
-                create_powerboard_table()
-            
-            # Additional spacing
-            ui.space().classes('h-2')
+        with ui.element('div').classes('flex w-full').style('justify-content: safe center;'):
+            with ui.card():
+                # Chassis Layout Section
+                ui.label('Chassis Configuration').classes('text-xl font-bold mb-4')
+                with ui.grid(columns=2).classes('gap-0').style('grid-auto-rows: 1fr;'):
+                    ui.label('Chassis Layout:').classes('flex justify-start items-center')
+                    product_select = ui.select(
+                        ['Hako-Core', 'Hako-Core Mini'], 
+                        value=globals.layoutState.get_product(), 
+                        on_change=handle_product_change
+                    )
+                    
+                    ui.label('Show drive model:').classes('flex justify-start items-center ') 
+                    ui_refs['model_switch'] = ui.switch(value=globals.layoutState.get_model_display(), on_change=lambda e: change_model_display(e.value)).style('justify-content:end;')
+
+                    ui.label('Show drive serial #:').classes('flex justify-start items-center') 
+                    ui_refs['sn_switch'] = ui.switch(value=globals.layoutState.get_sn_display(), on_change=lambda e: change_sn_display(e.value)).style('justify-content:end;')
+
+                ui.separator().classes('mb-6')
+                
+                # Powerboard Information Section
+                with ui.column().classes('w-full') as powerboard_container:
+                    ui.label('Powerboard Information').classes('text-xl font-bold mb-4')
+                    create_powerboard_table()
+                
+                ui.separator().classes('mb-6')
+                
+                # PWM Settings Section
+                with ui.column().classes('w-full') as pwm_container:
+                    ui.label('Default Fan Speed').classes('text-xl font-bold mb-4')
+                    ui.label('These will be used when the system starts and persist between power cycles.').classes('text-sm text-gray-500 mb-2')
+                    create_pwm_settings()
+                
+                # Additional spacing
+                ui.space().classes('h-2')

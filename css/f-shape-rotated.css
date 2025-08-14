@@ -1,0 +1,130 @@
+/* F-Shape Rotated CSS for chassis layout components */
+
+/* The main container for the F-shape */
+.f-shape-rotated {
+    --f-radius: 0.6em; /* Default radius for arms and patches */
+
+    width: 87%; /* Stem width relative to its parent */
+    height: 87%; /* Stem height relative to its parent */
+    aspect-ratio: 1; /* Keep it square */
+    margin: 0;
+    margin-left: 13%;
+    background-color: #171717; /* Stem color */
+    position: relative;
+    border-radius: 0.3em; /* Stem's own corner radius */
+    
+    display: flex; /* Not strictly necessary for this pseudo-element shape but often kept for consistency */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0%; 
+    box-sizing: border-box;
+    
+    container-type: inline-size; /* For container queries */
+}
+
+/* Original top horizontal bar, now the BOTTOM horizontal bar of the "rotated F" */
+.f-shape-rotated::before {
+    content: "";
+    position: absolute;
+    /* top: 0; CHANGED */
+    /* left: 0; CHANGED */
+    bottom: 0; /* Was top: 0; Now positioned at the bottom of the stem */
+    right: 0;  /* Was left: 0; Now emanates from the right edge of the stem (extends leftwards) */
+    width: 115%; /* Extends beyond the stem's width */
+    height: 20%; /* Height of the arm */
+    background-color: #171717; /* Arm color */
+    border-radius: var(--f-radius); /* Arm's corner radius */
+    z-index: -1; /* Behind the main stem if stem had transparent parts, or for layering */
+}
+
+/* Original middle horizontal bar, now the NEW MIDDLE horizontal bar of the "rotated F" */
+.f-shape-rotated::after {
+    content: "";
+    position: absolute;
+    /* top: 60%; CHANGED */
+    /* left: 0; CHANGED */
+    /* Original top was 60%. Rotated top is 100% - 60% (original top) - 20% (height) = 20% from the top */
+    top: 20%; 
+    right: 0; /* Was left: 0; Now emanates from the right edge of the stem (extends leftwards) */
+    width: 115%; 
+    height: 20%; 
+    background-color: #171717;
+    border-radius: var(--f-radius);
+    z-index: -1; 
+}
+
+/* --- CSS for Extending Patches (Rounded Joins) --- */
+.extension-patch-rotated {
+    position: absolute;
+    background-color: #171717; /* Patch color, matches arms/stem */
+    overflow: hidden; /* Essential for the scoop effect */
+    z-index: 0; /* Above pseudo-elements, below content if any */
+    width: var(--f-radius); /* Patch size is based on the radius */
+    height: var(--f-radius); 
+}
+
+/* Common style for the circular scoop pseudo-element within each patch */
+.extension-patch-rotated::after {
+    content: "";
+    position: absolute;
+    width: calc(var(--f-radius) * 2); /* Scoop is twice the radius */
+    height: calc(var(--f-radius) * 2); 
+    background-color: #303030; /* This should be the page background color for the scoop illusion */
+    border-radius: 50%; /* Makes it circular */
+    z-index: 1; /* Above the patch itself */
+}
+
+/* * Original: .patch-top-arm-bottom (connected bottom of original top arm)
+ * Rotated: Connects TOP of NEW BOTTOM arm (which was the original top arm)
+ */
+.patch-top-arm-bottom-rotated {
+    /* top: 20%; CHANGED. New bottom arm is top:80% (bottom:0, height:20%). This patch connects to its top. */
+    top: 80%; 
+    /* left: 100%; CHANGED. Arms are now on the left of stem, patches connect to left side of stem. */
+    right: 100%; /* Positioned to the left of the stem */
+    transform: translateY(-100%);
+}
+.patch-top-arm-bottom-rotated::after {
+    /* Was bottom: -R; right: -R; (scooped top-left of patch) */
+    /* Rotated: Scoops bottom-right of patch */
+    top: calc(var(--f-radius) * -1); 
+    left: calc(var(--f-radius) * -1);
+}
+
+/* * Original: .patch-mid-arm-top (connected top of original middle arm)
+ * Rotated: Connects BOTTOM of NEW MIDDLE arm
+ */
+.patch-mid-arm-top-rotated {
+    /* top: 60%; transform: translateY(-100%); CHANGED. 
+       New mid arm is top:20%, height:20%. Its bottom is at 40%.
+       This patch connects to its bottom edge, so patch's top is at 40%. */
+    top: 40%; 
+    /* left: 100%; CHANGED */
+    right: 100%; /* Positioned to the left of the stem */
+    transform: none; /* Original transform no longer needed with new direct positioning */
+}
+.patch-mid-arm-top-rotated::after {
+    /* Was top: -R; right: -R; (scooped bottom-left of patch) */
+    /* Rotated: Scoops top-right of patch */
+    bottom: calc(var(--f-radius) * -1); 
+    left: calc(var(--f-radius) * -1);
+}
+
+/* * Original: .patch-mid-arm-bottom (connected bottom of original middle arm)
+ * Rotated: Connects TOP of NEW MIDDLE arm
+ */
+.patch-mid-arm-bottom-rotated {
+    /* top: calc(60% + 20%); CHANGED. New mid arm is top:20%. This patch connects to its top. */
+    top: 20%; 
+    /* left: 100%; CHANGED */
+    right: 100%; /* Positioned to the left of the stem */
+    transform: translateY(-100%);
+}
+.patch-mid-arm-bottom-rotated::after {
+    /* Was bottom: -R; right: -R; (scooped top-left of patch) */
+    /* Rotated: Scoops bottom-right of patch */
+    top: calc(var(--f-radius) * -1); 
+    left: calc(var(--f-radius) * -1);
+}
+/* --- End of CSS for Extending Patches --- */

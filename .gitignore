@@ -125,3 +125,4 @@ config/*.json
 
 #NiceGUI
 ./nicegui
+.DS_Store

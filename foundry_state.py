@@ -32,7 +32,7 @@ class DriveInfo:
     on_time: Optional[int]
     temp: Optional[int]
     hash: int
-    
+
     def __post_init__(self):
         if not hasattr(self, 'hash'):
             self.hash = xxhash.xxh3_64(self.serial_num).intdigest()
@@ -40,10 +40,10 @@ class DriveInfo:
 
 class Drive:
     """Represents a storage drive with S.M.A.R.T. data."""
-    
-    def __init__(self, protocol: str, model: str, serial_num: str, firmware_ver: str, 
-                 capacity: Optional[Union[int, str]], rotate_rate: Optional[int], 
-                 power_cycle: Optional[int], on_time: Optional[int], temp: Optional[int], 
+
+    def __init__(self, protocol: str, model: str, serial_num: str, firmware_ver: str,
+                 capacity: Optional[Union[int, str]], rotate_rate: Optional[int],
+                 power_cycle: Optional[int], on_time: Optional[int], temp: Optional[int],
                  attribute_list: Optional[Any]):
         self.protocol = protocol
         self.model = model
@@ -66,12 +66,12 @@ class Drive:
                 rows = []
                 for attr in self.attribute_list:
                     rows.append({
-                        'ID': attr.get("id", "Unknown"), 
-                        "Name": attr.get("name", "Unknown"), 
+                        'ID': attr.get("id", "Unknown"),
+                        "Name": attr.get("name", "Unknown"),
                         "Value": attr.get("raw", {}).get("string", "Unknown")
                     })
                 return rows
-            
+
             elif self.protocol == 'NVMe':
                 if not self.attribute_list:
                     return []
@@ -81,10 +81,10 @@ class Drive:
                         value = ", ".join(str(e) for e in value)
                     rows.append({"Name": key, "Value": str(value)})
                 return rows
-            
+
             else:
                 return [{"Name": f"Protocol {self.protocol} not yet implemented", "Value": "N/A"}]
-                
+
         except Exception as e:
             logger.error(f"Error getting attribute list for drive {self.serial_num}: {e}")
             return [{"Name": "Error", "Value": "Failed to parse attributes"}]
@@ -113,19 +113,19 @@ class SmartCtlInterface:
         try:
             cmd = f"smartctl {args}"
             result = subprocess.run(
-                cmd, 
-                shell=True, 
-                capture_output=True, 
-                text=True, 
+                cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
                 timeout=timeout
             )
             if result.returncode == 127:
                 raise FoundryStateError("smartctl command not found. Please install smartmontools.")
             if result.returncode < 0:  # Negative return codes indicate serious errors
                 raise FoundryStateError(f"smartctl command failed: {result.stderr}")
-            
+
             return result.stdout
-            
+
         except subprocess.TimeoutExpired:
             logger.error(f"smartctl command timed out: {cmd}")
             raise FoundryStateError(f"Command timed out: {cmd}")
@@ -152,11 +152,11 @@ class SmartCtlInterface:
         try:
             device_path = device_id.split(' ')[0]
             json_output = cls.execute_command(f"--xall --json --device auto {device_path}")
-            
+
             if not json_output.strip():
                 logger.warning(f"No output from smartctl for device {device_path}")
                 return None
-                
+
             data = json.loads(json_output)
             drive = cls._parse_smart_data(data)
 
@@ -165,7 +165,7 @@ class SmartCtlInterface:
                     cls._save_raw_data(drive.model, json_output)
 
             return drive
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON for device {device_id}: {e}")
             return None
@@ -179,7 +179,7 @@ class SmartCtlInterface:
         try:
             device_info = data.get('device', {})
             protocol = device_info.get('protocol')
-            
+
             if not protocol:
                 logger.warning("No protocol found in S.M.A.R.T. data")
                 return None
@@ -188,7 +188,7 @@ class SmartCtlInterface:
             model = data.get('model_name') or data.get('scsi_model_name')
             serial_num = data.get('serial_number')
             firmware_ver = data.get('firmware_version')
-            
+
             if not serial_num:
                 logger.warning("No serial number found, skipping drive")
                 return None
@@ -216,7 +216,7 @@ class SmartCtlInterface:
                 power_cycle = data.get('power_cycle_count')
                 ata_smart = data.get('ata_smart_attributes', {})
                 attribute_list = ata_smart.get('table') if ata_smart else None
-                
+
             elif protocol == 'SCSI':
                 scsi_counter = data.get('scsi_start_stop_cycle_counter', {})
                 power_cycle = scsi_counter.get('accumulated_start_stop_cycles') if scsi_counter else None
@@ -225,11 +225,11 @@ class SmartCtlInterface:
                     temperature = report.get('temperature_1', {}) if report else None
                     temp = temperature.get('current') if temperature else None
                 attribute_list = []
-                
+
             elif protocol == 'NVMe':
                 power_cycle = data.get('power_cycle_count')
                 attribute_list = data.get('nvme_smart_health_information_log')
-                
+
             else:
                 logger.warning(f"Unsupported protocol: {protocol}")
                 power_cycle = None
@@ -247,7 +247,7 @@ class SmartCtlInterface:
                 temp=temp,
                 attribute_list=attribute_list
             )
-            
+
         except Exception as e:
             logger.error(f"Error parsing S.M.A.R.T. data: {e}")
             return None
@@ -258,17 +258,17 @@ class SmartCtlInterface:
         try:
             safe_model = "".join(c for c in model if c.isalnum() or c in (' ', '-', '_')).rstrip()
             filename = f"{safe_model}_smartctl.json"
-            
+
             with open(filename, "w", encoding='utf-8') as file:
                 file.write(json_output)
-                
+
         except Exception as e:
             logger.error(f"Failed to save raw data for {model}: {e}")
 
 
 class DriveManager:
     """Manages drive detection and caching."""
-    
+
     def __init__(self, debug,cache_duration: int = 300):  # 5 minutes cache
         self._drive_cache: Dict[int, Drive] = {}
         self._last_scan_time: float = 0
@@ -281,9 +281,9 @@ class DriveManager:
     def get_drives(self, force_refresh: bool = False) -> Dict[int, Drive]:
         """Get all drives with caching."""
         current_time = time.time()
-        
-        if (not force_refresh and 
-            self._drive_cache and 
+
+        if (not force_refresh and
+            self._drive_cache and
             (current_time - self._last_scan_time) < self._cache_duration):
             logger.info("Using cached drive data")
             return self._drive_cache.copy()
@@ -291,14 +291,14 @@ class DriveManager:
         logger.info("Scanning for drives...")
         self._drive_cache = self._scan_drives()
         self._last_scan_time = current_time
-        
+
         return self._drive_cache.copy()
 
     def _scan_drives(self) -> Dict[int, Drive]:
         """Scan for all drives and return dictionary."""
         drives = {}
         drive_ids = SmartCtlInterface.get_drive_ids()
-        
+
         for device_id in drive_ids:
             try:
                 drive = SmartCtlInterface.get_smart_data(device_id, self._debug)
@@ -307,7 +307,7 @@ class DriveManager:
                     logger.info(f"Added drive: {drive.model} ({drive.serial_num})")
                 else:
                     logger.warning(f"Failed to get data for device: {device_id}")
-                    
+
             except Exception as e:
                 logger.error(f"Error processing device {device_id}: {e}")
                 continue
@@ -326,19 +326,19 @@ class DriveManager:
     def refresh_drives_dict(self, existing_drives: Dict[int, Drive]) -> None:
         """
         Refresh an existing drives dictionary in-place, preserving object references where possible.
-        
+
         Args:
             existing_drives: Dictionary to update with current drive information
         """
         try:
             # Get fresh drive data
             fresh_drives = self.get_drives(force_refresh=True)
-            
+
             # Track changes for logging
             updated_count = 0
             added_count = 0
             removed_hashes = []
-            
+
             # Update existing drives in-place and add new ones
             for drive_hash, fresh_drive in fresh_drives.items():
                 if drive_hash in existing_drives:
@@ -350,60 +350,60 @@ class DriveManager:
                     # Add new drive
                     existing_drives[drive_hash] = fresh_drive
                     added_count += 1
-            
+
             # Remove drives that are no longer present
             for drive_hash in list(existing_drives.keys()):
                 if drive_hash not in fresh_drives:
                     removed_hashes.append(drive_hash)
                     del existing_drives[drive_hash]
-            
+
             logger.info(f"Refreshed drives dictionary: {updated_count} updated, "
                        f"{added_count} added, {len(removed_hashes)} removed")
-            
+
         except Exception as e:
             logger.error(f"Error refreshing drives dictionary: {e}")
             raise
 
     def _update_drive_inplace(self, existing_drive: Drive, fresh_drive: Drive) -> bool:
         """Update an existing Drive object with fresh data in-place.
-        
+
         Args:
             existing_drive: The existing Drive object to update
             fresh_drive: The fresh Drive object with new data
-            
+
         Returns:
             bool: True if any changes were made, False otherwise
         """
         changed = False
-        
+
         # List of attributes that might change over time
         updatable_attrs = ['on_time', 'temp', 'attribute_list']
-        
+
         for attr in updatable_attrs:
             fresh_value = getattr(fresh_drive, attr)
             existing_value = getattr(existing_drive, attr)
-            
+
             if fresh_value != existing_value:
                 setattr(existing_drive, attr, fresh_value)
                 changed = True
-        
+
         return changed
 
 
 class Backplane:
     """Represents a backplane that holds drives."""
-    
+
     # Class-level configuration for backplane types
     BACKPLANE_CONFIGS = {
         "STD4HDD": {"slots": 4, "type": "HDD"},
         "STD12SSD": {"slots": 12, "type": "SSD"},
         "SML2+2": {"slots": 4, "type": "Mixed"}
     }
-    
+
     def __init__(self, product: str):
         if product not in self.BACKPLANE_CONFIGS:
             raise ValueError(f"Unknown backplane product: {product}")
-            
+
         self.product = product
         self.config = self.BACKPLANE_CONFIGS[product]
         self.drives_hashes = [None] * self.config["slots"]
@@ -439,10 +439,10 @@ class Backplane:
 
 class Chassis:
     """Manages chassis layout and backplane configuration."""
-    
+
     DEFAULT_CONFIG_FILE = "config/layout_config.json"
     MAX_BACKPLANES = 12
-    
+
     def __init__(self, config_file: Optional[str] = None):
         self.config_file = config_file or self.DEFAULT_CONFIG_FILE
         self.product: Optional[str] = None
@@ -450,6 +450,9 @@ class Chassis:
         self.show_model = True
         self.show_sn = True
         self.hide_multi_curve_dialog = False  # User preference for multi-curve dialog
+        # Preferences
+        self.chassis_orientation = "normal"  # "normal" or "inverted"
+        self.units = "C"  # Temperature units: "C" for Celsius, "F" for Fahrenheit
 
         if config_file:
             self._load_config()
@@ -466,18 +469,20 @@ class Chassis:
 
             with open(config_path, "r", encoding='utf-8') as file:
                 config:dict = json.load(file)
-                
+
             self.product = config.get("product")
             backplanes_data = config.get("backplanes", [])
             options = config.get("options", {})
             self.show_model = options.get("show_model", True)
             self.show_sn = options.get("show_sn", True)
             self.hide_multi_curve_dialog = options.get("hide_multi_curve_dialog", False)
+            self.chassis_orientation = options.get("chassis_orientation", "normal")
+            self.units = options.get("units", "C")
 
             # Ensure we have the right number of backplane slots
             while len(backplanes_data) < self.MAX_BACKPLANES:
                 backplanes_data.append(None)
-                
+
             self.backplanes = []
             for bp_data in backplanes_data[:self.MAX_BACKPLANES]:
                 if bp_data is None:
@@ -490,9 +495,9 @@ class Chassis:
                     except Exception as e:
                         logger.error(f"Error loading backplane: {e}")
                         self.backplanes.append(None)
-                        
+
             logger.info(f"Loaded chassis config: {self.product}")
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"Invalid JSON in config file: {e}")
             self._reset_to_defaults()
@@ -527,17 +532,39 @@ class Chassis:
     def get_sn_display(self):
         """Return model display option."""
         return self.show_sn
-    
+
+    def set_units(self, units: str) -> None:
+        """Set temperature units (C or F)."""
+        if units not in ["C", "F"]:
+            raise ValueError("Units must be 'C' for Celsius or 'F' for Fahrenheit")
+        self.units = units
+        self.save_config()
+
+    def get_units(self) -> str:
+        """Get temperature units."""
+        return self.units
+
+    def get_chassis_orientation(self) -> str:
+        """Get chassis orientation setting."""
+        return getattr(self, 'chassis_orientation', 'normal')
+
+    def set_chassis_orientation(self, orientation: str) -> None:
+        """Set chassis orientation setting."""
+        if orientation not in ["normal", "inverted"]:
+            raise ValueError(f"Invalid orientation: {orientation}. Must be 'normal' or 'inverted'")
+        self.chassis_orientation = orientation
+        self.save_config()
+
     def get_product(self) -> Optional[str]:
         """Get chassis product type."""
         return self.product
-    
+
     def insert_backplane(self, card, product: str) -> Backplane:
         """Insert backplane at specified card."""
         card_index = card.index if hasattr(card, 'index') else card
         if not (0 <= card_index < self.MAX_BACKPLANES):
             raise IndexError(f"Invalid backplane index: {card_index}")
-            
+
         backplane = Backplane(product)
         self.backplanes[card_index] = backplane
         self.save_config()
@@ -548,7 +575,7 @@ class Chassis:
         card_index = card.index if hasattr(card, 'index') else card
         if not (0 <= card_index < self.MAX_BACKPLANES):
             raise IndexError(f"Invalid backplane index: {card_index}")
-            
+
         self.backplanes[card_index] = None
         self.save_config()
 
@@ -565,11 +592,11 @@ class Chassis:
         card_index = card.index if hasattr(card, 'index') else card
         if not (0 <= card_index < self.MAX_BACKPLANES):
             raise IndexError(f"Invalid card index: {card_index}")
-            
+
         backplane = self.backplanes[card_index]
         if backplane is None:
             raise ValueError(f"No backplane at index {card_index}")
-            
+
         # Parse drive serial number from selection string
         try:
             serial_num = drive_selection.split()[-1][1:-1]  # Extract from format "Model (SN123)"
@@ -585,17 +612,22 @@ class Chassis:
         card_index = card.index if hasattr(card, 'index') else card
         if not (0 <= card_index < self.MAX_BACKPLANES):
             raise IndexError(f"Invalid card index: {card_index}")
-            
+
         backplane = self.backplanes[card_index]
         if backplane is None:
             raise ValueError(f"No backplane at index {card_index}")
-            
+
         backplane.remove_drive(drive_hash)
         self.save_config()
 
     def reset_chassis(self) -> None:
         """Reset chassis to empty state."""
         self.product = None
+        self.backplanes = [None] * self.MAX_BACKPLANES
+        self.save_config()
+
+    def clear_all_backplanes(self) -> None:
+        """Clear all backplanes while keeping chassis product and other settings."""
         self.backplanes = [None] * self.MAX_BACKPLANES
         self.save_config()
 
@@ -606,21 +638,23 @@ class Chassis:
                 "product": self.product,
                 "backplanes": [bp.to_json() if bp is not None else None for bp in self.backplanes],
                 "options": {
-                    "show_model": self.show_model, 
-                    "show_sn": self.show_sn,
-                    "hide_multi_curve_dialog": self.hide_multi_curve_dialog
-                }
+                        "show_model": self.show_model,
+                        "show_sn": self.show_sn,
+                        "hide_multi_curve_dialog": self.hide_multi_curve_dialog,
+                        "chassis_orientation": self.chassis_orientation,
+                        "units": self.units
+                    }
             }
-            
+
             # Ensure config directory exists
             config_path = Path(self.config_file)
             config_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             with open(self.config_file, "w", encoding='utf-8') as file:
                 json.dump(config_data, file, indent=4)
-                
+
             logger.info("Configuration saved successfully")
-            
+
         except Exception as e:
             logger.error(f"Error saving configuration: {e}")
             raise FoundryStateError(f"Failed to save configuration: {e}")
@@ -629,7 +663,7 @@ class Chassis:
         """Get chassis statistics."""
         total_backplanes = sum(1 for bp in self.backplanes if bp is not None)
         total_drives = sum(bp.get_drive_count() for bp in self.backplanes if bp is not None)
-        
+
         return {
             "product": self.product,
             "total_backplanes": total_backplanes,

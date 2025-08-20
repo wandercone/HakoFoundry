@@ -4,7 +4,7 @@ from nicegui import run, ui, app
 import serial.tools.list_ports
 import logging
 
-# Configure logging  
+# Configure logging
 logger = logging.getLogger("foundry_logger")
 
 layoutState:Chassis = None
@@ -65,7 +65,7 @@ def initFanProfileBackend():
     if fan_profile_service is not None:
         logger.debug("Fan control backend already initialized, skipping")
         return fan_profile_service
-    
+
     import fan_profile_manager
     # Note: Fan backend will use the global temp_backend via property access
     fan_profile_service = fan_profile_manager.FanControlBackend()
@@ -77,7 +77,7 @@ def initTempBackend():
     import temperature_sensor_service
     temp_sensor_service = temperature_sensor_service.SensorManagementService()
     logger.info("Temperature sensor backend initialized")
-    
+
     # Create a timer to refresh temperature readings every 3 seconds
     def refresh_temperatures():
         if temp_sensor_service:
@@ -86,20 +86,50 @@ def initTempBackend():
                 logger.debug("Temperature readings refreshed")
             except Exception as e:
                 logger.warning(f"Error refreshing temperature readings: {e}")
-    
+
     ui.timer(3.0, refresh_temperatures)
     logger.info("Temperature refresh timer started (3 second interval)")
 
 def initFanControlService():
     """Initialize the global fan control service instance."""
     global fan_control_service
-    
+
     if fan_control_service is not None:
         logger.info("Fan control service already initialized")
         return fan_control_service
-    
+
     from fan_control_service import FanControlService
     fan_control_service = FanControlService()
-    
+
     logger.info("Fan control service initialized and started")
     return fan_control_service
+
+def convert_temperature(temp_celsius):
+    """Convert temperature from Celsius to the user's preferred unit."""
+    if temp_celsius is None:
+        return None
+
+    try:
+        temp_celsius = float(temp_celsius)
+        if layoutState and layoutState.get_units() == "F":
+            # Convert C to F: (C × 9/5) + 32
+            temp_fahrenheit = (temp_celsius * 9/5) + 32
+            return temp_fahrenheit
+        else:
+            return temp_celsius
+    except (ValueError, TypeError):
+        return None
+
+def format_temperature(temp_celsius):
+    """Format temperature with the appropriate unit symbol."""
+    converted_temp = convert_temperature(temp_celsius)
+    if converted_temp is None:
+        return "N/A"
+
+    try:
+        if layoutState and layoutState.get_units() == "F":
+            return f"{converted_temp:.1f}°F"
+        else:
+            return f"{converted_temp:.1f}°C"
+    except:
+        return "N/A"

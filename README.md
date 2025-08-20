@@ -60,10 +60,27 @@ sudo docker run -d \
   hakoforge/hako-foundry
 ```
 
-Once the server is running, head over to the port that was configured and organize your drives. 
+Alternatively, you can use the included interactive `setup.sh` script to generate a `docker-compose.yml` with automatic device discovery and sensible defaults. To copy the script to a remote machine and run it locally, use one of the following safe options (review the script before running):
+
+```bash
+# Download, make executable, then run
+curl -fsSL https://raw.githubusercontent.com/HakoForge/HakoFoundry/setup.sh -o setup.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+Or with wget:
+
+```bash
+wget -qO setup.sh https://raw.githubusercontent.com/HakoForge/HakoFoundry/setup.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+Once the server is running, head over to the port that was configured and organize your drives.
 Add backplanes, select drives. Click on the drive banner on the top right to remove a drive. Right click on backplanes to remove them. Click on the fans to control them. Unchecking the *manual* checkbox will allow you to select a fan profile.
 
-Fan profiles are made on the *fan curve* page. There can be multiple fan profiles which can be assignd to different fan walls. Each fan profile can also have multiple fan curves. This is how you would implement multi sensor fan control. Selecting *Drives* as a temperature source will allow you to select a set of drives to use as a temperature source. 
+Fan profiles are made on the *fan curve* page. There can be multiple fan profiles which can be assignd to different fan walls. Each fan profile can also have multiple fan curves. This is how you would implement multi sensor fan control. Selecting *Drives* as a temperature source will allow you to select a set of drives to use as a temperature source.
 
 ### Command Breakdown
 
@@ -89,6 +106,26 @@ Fan profiles are made on the *fan curve* page. There can be multiple fan profile
 - **Advanced Analytics**: Trend analysis and predictive maintenance alerts
 - **Enhanced Graphs**: Visual representation of performance metrics over time
 - **Powerboard Updates**: Built in firmware updates
+
+## Setup Script
+
+This repository includes an interactive setup helper script, `setup.sh`, which generates a ready-to-run `docker-compose.yml` with dynamic device discovery (block devices and serial ports), an auto-generated secret, and simple options for storage, port, and access mode.
+
+Quick usage:
+
+```bash
+./setup.sh
+# Review the generated docker-compose.yml, then:
+docker compose up -d
+```
+
+What the script does (short):
+- Generates a URL-safe secret and prints it for your records
+- Lets you choose between a Docker volume or a bind mount for config
+- Optionally auto-scans for `/dev/sd*` block devices and `/dev/ttyACM*`/`/dev/ttyUSB*` serial ports and inserts them into `docker-compose.yml`
+- Sets the host port and whether the app runs in open-access mode
+
+See `setup.sh` for all prompts and options. Re-run the script to regenerate the compose file with different settings.
 
 ## Support & Contributing
 

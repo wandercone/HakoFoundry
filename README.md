@@ -60,6 +60,9 @@ sudo docker run -d \
   hakoforge/hako-foundry
 ```
 
+
+## Docker Compose
+
 Alternatively, you can use the included interactive `setup.sh` script to generate a `docker-compose.yml` with automatic device discovery and sensible defaults. To copy the script to a remote machine and run it locally, use one of the following safe options (review the script before running):
 
 ```bash
@@ -82,7 +85,7 @@ Add backplanes, select drives. Click on the drive banner on the top right to rem
 
 Fan profiles are made on the *fan curve* page. There can be multiple fan profiles which can be assignd to different fan walls. Each fan profile can also have multiple fan curves. This is how you would implement multi sensor fan control. Selecting *Drives* as a temperature source will allow you to select a set of drives to use as a temperature source.
 
-### Command Breakdown
+## Command Breakdown
 
 - **Powerboard Detection**: `$(ls /dev/ttyACM* | sed 's/^/--device /')` - Automatically detects and passes powerboard USB connections
   ```bash

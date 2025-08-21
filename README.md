@@ -80,6 +80,8 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
+## Configure UI and Fans
+
 Once the server is running, head over to the port that was configured and organize your drives.
 Add backplanes, select drives. Click on the drive banner on the top right to remove a drive. Right click on backplanes to remove them. Click on the fans to control them. Unchecking the *manual* checkbox will allow you to select a fan profile.
 

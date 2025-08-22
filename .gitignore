@@ -124,5 +124,5 @@ dmypy.json
 config/*.json
 
 #NiceGUI
-./nicegui
+.nicegui
 .DS_Store

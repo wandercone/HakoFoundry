@@ -32,6 +32,28 @@ def settingsPage():
                 ui_refs['sn_switch'].set_value(True)
         globals.layoutState.set_model_display(value)
 
+    def swap_powerboard_positions():
+        """Swap the positions of powerboard 1 and 2 in powerboardDict."""
+        pb1 = globals.powerboardDict.get(1)
+        pb2 = globals.powerboardDict.get(2)
+
+        if pb1 and pb2:
+            # Swap the Powerboard objects in the dictionary
+            globals.powerboardDict[1], globals.powerboardDict[2] = globals.powerboardDict[2], globals.powerboardDict[1]
+
+            ui.notify("Powerboard positions swapped!",
+                     position='bottom-right', type='positive', group=False)
+            # Refresh the powerboard information table
+            powerboard_container.clear()
+            with powerboard_container:
+                create_powerboard_table()
+        elif pb1 or pb2:
+            ui.notify("Only one powerboard detected, cannot swap.",
+                     position='bottom-right', type='warning', group=False)
+        else:
+            ui.notify("No powerboards detected, cannot swap.",
+                     position='bottom-right', type='warning', group=False)
+
     def change_sn_display(value):
         # If turning off SN display, ensure model display is on
         if not value and not globals.layoutState.get_model_display():
@@ -299,6 +321,11 @@ def settingsPage():
                 with ui.column().classes('w-full') as powerboard_container:
                     ui.label('Powerboard Information').classes('text-xl font-bold mb-4')
                     create_powerboard_table()
+                if 2 in globals.powerboardDict:
+                    with ui.row().classes('w-full justify-center'):
+                        ui.label('Swap powerboard positions:').classes('flex justify-start items-center ')
+                        ui_refs['pb_swap_switch'] = ui.switch(value=globals.layoutState.get_pb_swap(), on_change=lambda e: (globals.layoutState.set_pb_swap(e.value), swap_powerboard_positions())).style('justify-content:end;')
+
 
                 ui.separator().classes('mb-6')
 

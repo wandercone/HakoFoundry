@@ -453,6 +453,7 @@ class Chassis:
         # Preferences
         self.chassis_orientation = "normal"  # "normal" or "inverted"
         self.units = "C"  # Temperature units: "C" for Celsius, "F" for Fahrenheit
+        self.pb_swap = False # Powerboard swap preference
 
         if config_file:
             self._load_config()
@@ -478,6 +479,7 @@ class Chassis:
             self.hide_multi_curve_dialog = options.get("hide_multi_curve_dialog", False)
             self.chassis_orientation = options.get("chassis_orientation", "normal")
             self.units = options.get("units", "C")
+            self.pb_swap = options.get("pb_swap", False)
 
             # Ensure we have the right number of backplane slots
             while len(backplanes_data) < self.MAX_BACKPLANES:
@@ -543,6 +545,15 @@ class Chassis:
     def get_units(self) -> str:
         """Get temperature units."""
         return self.units
+
+    def set_pb_swap(self, value: bool) -> None:
+        """Set powerboard swap option."""
+        self.pb_swap = value
+        self.save_config()
+
+    def get_pb_swap(self) -> bool:
+        """Get powerboard swap option."""
+        return self.pb_swap
 
     def get_chassis_orientation(self) -> str:
         """Get chassis orientation setting."""
@@ -642,7 +653,8 @@ class Chassis:
                         "show_sn": self.show_sn,
                         "hide_multi_curve_dialog": self.hide_multi_curve_dialog,
                         "chassis_orientation": self.chassis_orientation,
-                        "units": self.units
+                        "units": self.units,
+                        "pb_swap": self.pb_swap
                     }
             }
 

@@ -451,7 +451,7 @@ class Chassis:
         self.show_sn = True
         self.hide_multi_curve_dialog = False  # User preference for multi-curve dialog
         # Preferences
-        self.chassis_orientation = "normal"  # "normal" or "inverted"
+        self.chassis_orientation = False  # False for normal, True for inverted
         self.units = "C"  # Temperature units: "C" for Celsius, "F" for Fahrenheit
         self.pb_swap = False # Powerboard swap preference
 
@@ -477,7 +477,12 @@ class Chassis:
             self.show_model = options.get("show_model", True)
             self.show_sn = options.get("show_sn", True)
             self.hide_multi_curve_dialog = options.get("hide_multi_curve_dialog", False)
-            self.chassis_orientation = options.get("chassis_orientation", "normal")
+            # Handle both old string format and new boolean format
+            orientation_value = options.get("chassis_orientation", "normal")
+            if isinstance(orientation_value, str):
+                self.chassis_orientation = orientation_value == "inverted"
+            else:
+                self.chassis_orientation = bool(orientation_value)
             self.units = options.get("units", "C")
             self.pb_swap = options.get("pb_swap", False)
 
@@ -555,15 +560,13 @@ class Chassis:
         """Get powerboard swap option."""
         return self.pb_swap
 
-    def get_chassis_orientation(self) -> str:
-        """Get chassis orientation setting."""
-        return getattr(self, 'chassis_orientation', 'normal')
+    def chassis_is_inverted(self) -> bool:
+        """Get chassis orientation setting. Returns True if inverted, False if normal."""
+        return getattr(self, 'chassis_orientation', False)
 
-    def set_chassis_orientation(self, orientation: str) -> None:
+    def set_chassis_inverted(self, inverted: bool) -> None:
         """Set chassis orientation setting."""
-        if orientation not in ["normal", "inverted"]:
-            raise ValueError(f"Invalid orientation: {orientation}. Must be 'normal' or 'inverted'")
-        self.chassis_orientation = orientation
+        self.chassis_orientation = bool(inverted)
         self.save_config()
 
     def get_product(self) -> Optional[str]:

@@ -53,3 +53,59 @@
             transparent 100%
         ) 0 var(--boarder-thickness) / 100% calc(100% - 4px) no-repeat;
 }
+
+.pseudo-extend-inverted {
+    --base-color: #303030;
+    --border-color: #252525;
+    --fade-length: 180px;
+    --boarder-thickness: 5px;
+    background: var(--base-color);
+    color: white;
+    z-index: 1;
+    position: relative;
+    border: var(--boarder-thickness) solid var(--border-color);
+    border-left: none;
+    border-radius: 0 15px 15px 0;
+}
+
+.pseudo-extend-inverted::after {
+    position: absolute;
+    content: '';
+    top: 0;
+    right: 100%;
+    width: 200px;
+    bottom: 0;
+    z-index: -1;
+    border-left: none;
+    border-right: none;
+    top: -5px;   
+    bottom: -5px;  
+    background: 
+        /* Top border */
+        linear-gradient(to left, 
+            var(--border-color) 0%,
+            var(--border-color) 15%,
+            color-mix(in srgb, var(--border-color) 70%, transparent) 40%,
+            color-mix(in srgb, var(--border-color) 40%, transparent) 70%,
+            color-mix(in srgb, var(--border-color) 10%, transparent) 90%,
+            transparent 100%
+        ) 0 0 / 100% var(--boarder-thickness) no-repeat,
+        /* Bottom border */
+        linear-gradient(to left, 
+            var(--border-color) 0%,
+            var(--border-color) 15%,
+            color-mix(in srgb, var(--border-color) 70%, transparent) 40%,
+            color-mix(in srgb, var(--border-color) 40%, transparent) 70%,
+            color-mix(in srgb, var(--border-color) 10%, transparent) 90%,
+            transparent 100%
+        ) 0 100% / 100% var(--boarder-thickness) no-repeat,
+        /* Background */
+        linear-gradient(to left, 
+            var(--base-color) 0%,
+            var(--base-color) 15%,
+            color-mix(in srgb, var(--base-color) 70%, transparent) 40%,
+            color-mix(in srgb, var(--base-color) 40%, transparent) 70%,
+            color-mix(in srgb, var(--base-color) 10%, transparent) 90%,
+            transparent 100%
+        ) 0 var(--boarder-thickness) / 100% calc(100% - 4px) no-repeat;
+}

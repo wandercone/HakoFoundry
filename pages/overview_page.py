@@ -331,60 +331,60 @@ class ChassisLayoutManager:
             "Hako-Core": {
                 "normal": {
                     "grid_template_areas": """
-                        "rpm1 rpm1 rpm2 rpm2 watt1 watt1 watt1 watt1 watt2 watt2 watt2 watt2 watt3 watt3 watt3 watt3 rpm3 rpm3 rpm4 rpm4 rpm5 rpm5 rpm6 rpm6"
-                        "fan1 . bp1 bp1 bp1 bp1 bp1 bp1 fan2 . bp2 bp2 bp2 bp2 bp2 bp2 bp3 bp3 bp3 bp3 bp3 bp3 fan3 ."
-                        "fan1 . bp4 bp4 bp4 bp4 bp4 bp4 fan2 . bp5 bp5 bp5 bp5 bp5 bp5 bp6 bp6 bp6 bp6 bp6 bp6 fan3 ."
-                        "fan1 . bp7 bp7 bp7 bp7 bp7 bp7 fan2 . bp8 bp8 bp8 bp8 bp8 bp8 bp9 bp9 bp9 bp9 bp9 bp9 fan3 ."
-                        "fan1 . sml1 sml1 sml1 sml1 sml1 sml1 fan2 . sml2 sml2 sml2 sml2 sml2 sml2 sml3 sml3 sml3 sml3 sml3 sml3 fan3 ."
+                        "rpm1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 rpm2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt3 watt3 watt3 watt3 watt3 watt3 watt3 rpm3"
+                        "fan1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 fan2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp3 bp3 bp3 bp3 bp3 bp3 bp3 fan3"
+                        "fan1 bp4 bp4 bp4 bp4 bp4 bp4 bp4 fan2 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp6 bp6 bp6 bp6 bp6 bp6 bp6 fan3"
+                        "fan1 bp7 bp7 bp7 bp7 bp7 bp7 bp7 fan2 bp8 bp8 bp8 bp8 bp8 bp8 bp8 bp9 bp9 bp9 bp9 bp9 bp9 bp9 fan3"
+                        "fan1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 fan2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml3 sml3 sml3 sml3 sml3 sml3 sml3 fan3"
                     """,
                     "fan_positions": ["fan1", "fan2", "fan3"],
                     "backplane_positions": ["bp1", "bp2", "bp3", "bp4", "bp5", "bp6", "bp7", "bp8", "bp9"],
                     "small_positions": ["sml1", "sml2", "sml3"],
-                    "rpm_positions": ["rpm1", "rpm2", "rpm3", "rpm4", "rpm5", "rpm6"],
+                    "rpm_positions": ["rpm1", "rpm2", "rpm3"],
                     "watt_positions": ["watt1", "watt2", "watt3"]
                 },
                 "inverted": {
                     "grid_template_areas": """
-                        "rpm1 rpm1 rpm2 rpm2 watt1 watt1 watt1 watt1 watt2 watt2 watt2 watt2 watt3 watt3 watt3 watt3 rpm3 rpm3 rpm4 rpm4 rpm5 rpm5 rpm6 rpm6"
-                        "fan1 . bp1 bp1 bp1 bp1 bp1 bp1 bp2 bp2 bp2 bp2 bp2 bp2 fan2 . bp3 bp3 bp3 bp3 bp3 bp3 fan3 ."
-                        "fan1 . bp4 bp4 bp4 bp4 bp4 bp4 bp5 bp5 bp5 bp5 bp5 bp5 fan2 . bp6 bp6 bp6 bp6 bp6 bp6 fan3 ."
-                        "fan1 . bp7 bp7 bp7 bp7 bp7 bp7 bp8 bp8 bp8 bp8 bp8 bp8 fan2 . bp9 bp9 bp9 bp9 bp9 bp9 fan3 ."
-                        "fan1 . sml1 sml1 sml1 sml1 sml1 sml1 sml2 sml2 sml2 sml2 sml2 sml2 fan2 . sml3 sml3 sml3 sml3 sml3 sml3 fan3 ."
+                        "rpm3 watt3 watt3 watt3 watt3 watt3 watt3 watt3 watt2 watt2 watt2 watt2 watt2 watt2 watt2 rpm2 watt1 watt1 watt1 watt1 watt1 watt1 watt1 rpm1"
+                        "fan3 sml3 sml3 sml3 sml3 sml3 sml3 sml3 sml2 sml2 sml2 sml2 sml2 sml2 sml2 fan2 sml1 sml1 sml1 sml1 sml1 sml1 sml1 fan1"
+                        "fan3 bp9 bp9 bp9 bp9 bp9 bp9 bp9 bp8 bp8 bp8 bp8 bp8 bp8 bp8 fan2 bp7 bp7 bp7 bp7 bp7 bp7 bp7 fan1"
+                        "fan3 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp5 bp5 bp5 bp5 bp5 bp5 bp5 fan2 bp4 bp4 bp4 bp4 bp4 bp4 bp4 fan1"
+                        "fan3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp2 bp2 bp2 bp2 bp2 bp2 bp2 fan2 bp1 bp1 bp1 bp1 bp1 bp1 bp1 fan1"
                     """,
                     "fan_positions": ["fan1", "fan2", "fan3"],
                     "backplane_positions": ["bp1", "bp2", "bp3", "bp4", "bp5", "bp6", "bp7", "bp8", "bp9"],
                     "small_positions": ["sml1", "sml2", "sml3"],
-                    "rpm_positions": ["rpm1", "rpm2", "rpm3", "rpm4", "rpm5", "rpm6"],
+                    "rpm_positions": ["rpm1", "rpm2", "rpm3"],
                     "watt_positions": ["watt1", "watt2", "watt3"]
                 }
             },
             "Hako-Core Mini": {
                 "normal": {
                     "grid_template_areas": """
-                        "rpm1 rpm1 rpm2 rpm2 watt1 watt1 watt1 watt1 watt2 watt2 watt2 watt2 rpm3 rpm3 rpm4 rpm4"
-                        "fan1 . bp1 bp1 bp1 bp1 bp1 bp1 fan2 . bp2 bp2 bp2 bp2 bp2 bp2"
-                        "fan1 . bp3 bp3 bp3 bp3 bp3 bp3 fan2 . bp4 bp4 bp4 bp4 bp4 bp4"
-                        "fan1 . bp5 bp5 bp5 bp5 bp5 bp5 fan2 . bp6 bp6 bp6 bp6 bp6 bp6"
-                        "fan1 . sml1 sml1 sml1 sml1 sml1 sml1 fan2 . sml2 sml2 sml2 sml2 sml2 sml2"
+                        "rpm1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 rpm2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2"
+                        "fan1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 fan2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2"
+                        "fan1 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 fan2 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4"
+                        "fan1 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 fan2 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6"
+                        "fan1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 fan2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2"
                     """,
                     "fan_positions": ["fan1", "fan2"],
                     "backplane_positions": ["bp1", "bp2", "bp3", "bp4", "bp5", "bp6"],
                     "small_positions": ["sml1", "sml2"],
-                    "rpm_positions": ["rpm1", "rpm2", "rpm3", "rpm4"],
+                    "rpm_positions": ["rpm1", "rpm2"],
                     "watt_positions": ["watt1", "watt2"]
                 },
                 "inverted": {
                     "grid_template_areas": """
-                        "rpm1 rpm1 rpm2 rpm2 watt1 watt1 watt1 watt1 watt2 watt2 watt2 watt2 rpm3 rpm3 rpm4 rpm4"
-                        "fan1 . bp1 bp1 bp1 bp1 bp1 bp1 bp2 bp2 bp2 bp2 bp2 bp2 fan2 ."
-                        "fan1 . bp3 bp3 bp3 bp3 bp3 bp3 bp4 bp4 bp4 bp4 bp4 bp4 fan2 ."
-                        "fan1 . bp5 bp5 bp5 bp5 bp5 bp5 bp6 bp6 bp6 bp6 bp6 bp6 fan2 ."
-                        "fan1 . sml1 sml1 sml1 sml1 sml1 sml1 sml2 sml2 sml2 sml2 sml2 sml2 fan2 ."
+                        "watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 watt2 rpm2 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 watt1 rpm1"
+                        "sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 sml2 fan2 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 sml1 fan1"
+                        "bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 bp6 fan2 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 bp5 fan1"
+                        "bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 bp4 fan2 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 bp3 fan1"
+                        "bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 bp2 fan2 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 bp1 fan1"
                     """,
                     "fan_positions": ["fan1", "fan2"],
                     "backplane_positions": ["bp1", "bp2", "bp3", "bp4", "bp5", "bp6"],
                     "small_positions": ["sml1", "sml2"],
-                    "rpm_positions": ["rpm1", "rpm2", "rpm3", "rpm4"],
+                    "rpm_positions": ["rpm1", "rpm2"],
                     "watt_positions": ["watt1", "watt2"]
                 }
             }
@@ -423,7 +423,7 @@ class SystemOverview:
             self.fan_control_service = globals.fan_control_service
 
     def should_flip_backplane(self, i: int) -> bool:
-        if globals.layoutState.get_chassis_orientation() != "inverted":
+        if not globals.layoutState.chassis_is_inverted():
             return False
         chassis = globals.layoutState.get_product()
         if chassis == "Hako-Core":
@@ -433,7 +433,7 @@ class SystemOverview:
         return False
 
     def should_rotate_backplane(self, index: int) -> bool:
-        if globals.layoutState.get_chassis_orientation() != "inverted":
+        if not globals.layoutState.chassis_is_inverted():
             return False
         chassis = globals.layoutState.get_product()
         if chassis == "Hako-Core":
@@ -937,21 +937,21 @@ class SystemOverview:
 
         # --- determine if this backplane should be rotated in inverted orientation ---
         def should_flip(i: int) -> bool:
-            if globals.layoutState.get_chassis_orientation() != "inverted":
+            if not globals.layoutState.chassis_is_inverted():
                 return False
             chassis = globals.layoutState.get_product()
             if chassis == "Hako-Core":
-                return i in {0, 1, 3, 4, 6, 7, 9, 10}
+                return i in {0, 1, 2, 3, 4, 6, 7, 9, 10}
             if chassis == "Hako-Core Mini":
                 return i in {0, 1, 2, 3, 4, 5}
             return False
 
-        need_flip = should_flip(index)
+        need_flip = globals.layoutState.chassis_is_inverted()
 
         # order for SML2+2 - check if we need reversed order for inverted mode
         def should_reverse_sml_order():
             """Check if SML2+2 backplane should have reversed button order (SSDs first)."""
-            if globals.layoutState.get_chassis_orientation() != "inverted":
+            if not globals.layoutState.chassis_is_inverted():
                 return False
             if backplane_type != "SML2+2":
                 return False
@@ -1058,43 +1058,9 @@ class SystemOverview:
                 self.right_drawer.hide()
         card.buttons.clear()
 
-        orientation = globals.layoutState.get_chassis_orientation()
-        chassis_type = globals.layoutState.get_product()
-
-        if orientation == "normal":
-            # In normal mode, card class determines backplane options
-            show_standard_options = (card_class == StdPlaceHolderCard)
-        else:
-            # In inverted mode, certain positions change their backplane type options
-            if chassis_type == "Hako-Core":
-                # In inverted mode for Hako-Core:
-                # - Positions 0, 1 should show small (2+2) backplane options
-                # - Positions 9, 10, 11 should show standard backplane options (was small in normal)
-                # - All other positions show standard backplane options
-                if card.index in {0, 1, 2}:  # Fixed: include all 3 top positions for small backplanes
-                    show_standard_options = False  # Show small (2+2) options
-                elif card.index in {9, 10, 11}:
-                    show_standard_options = True   # Show standard options
-                else:
-                    show_standard_options = True   # Show standard options
-            elif chassis_type == "Hako-Core Mini":
-                # In inverted mode for Hako-Core Mini:
-                # - Positions 0, 1 should show small (2+2) backplane options
-                # - Positions 6, 7 should show standard backplane options (was small in normal)
-                # - All other positions show standard backplane options
-                if card.index in {0, 1}:
-                    show_standard_options = False  # Show small (2+2) options
-                elif card.index in {6, 7}:
-                    show_standard_options = True   # Show standard options
-                else:
-                    show_standard_options = True   # Show standard options
-            else:
-                # Fallback to card class-based logic
-                show_standard_options = (card_class == StdPlaceHolderCard)
-
         with card.style(f'{element_justified}'):
             with FadingDropdown('Add Backplane', icon='add').menu:
-                if show_standard_options:
+                if card_class == StdPlaceHolderCard:
                     ui.menu_item(
                         '4 HDD Backplane',
                         on_click=lambda: self.setup_backplane_buttons(
@@ -1123,7 +1089,8 @@ class SystemOverview:
         self.fan_buttons_list.clear()
         self.wattage_card_list.clear()
 
-        orientation = globals.layoutState.get_chassis_orientation() or "normal"
+        is_inverted = globals.layoutState.chassis_is_inverted()
+        orientation = "inverted" if is_inverted else "normal"
         layout_config = self.layout_manager.get_layout_config(chassis_type, orientation)
         if not layout_config:
             print(f"No layout config found for {chassis_type} {orientation}")
@@ -1132,10 +1099,14 @@ class SystemOverview:
         grid_template_areas = self.layout_manager.get_grid_template_areas(chassis_type, orientation)
 
         with card:
+            # Set width based on chassis type
+            card_width = '50dvw' if chassis_type == "Hako-Core Mini" else '70dvw'
+            # Set grid template rows based on orientation
+            grid_rows = '4% 21% 25% 25% 25%' if is_inverted else '4% 25% 25% 25% 21%'
             with ui.element('div').classes('gap-0').style(
-                f'height: 98.9dvh; width: 70dvw; min-width: 1200px; min-height: 800px; '
+                f'height: 98.9dvh; width: {card_width}; min-width: 800px; min-height: 800px; '
                 f'display: grid; grid-template-areas: {grid_template_areas}; '
-                f'grid-template-rows: 4% 25% 25% 25% 21%; '
+                f'grid-template-rows: {grid_rows}; '
                 f'grid-template-columns: repeat(24, 1fr);'
             ) as grid_container:
 
@@ -1157,7 +1128,7 @@ class SystemOverview:
                         bp = backplane_list[i] if i < len(backplane_list) else None
                         card_widget = StdPlaceHolderCard(i, bp, position)
                         # flip the parent card NOW, even if empty
-                        card_widget.classes(add="bp-rotatable" + (" flip-180" if self.should_flip_backplane(i) else ""))
+                        card_widget.classes(add="bp-rotatable" + (" flip-180" if globals.layoutState.chassis_is_inverted() else ""))
                         if bp:
                             self.setup_backplane_buttons(card_widget, bp, i)
                         else:
@@ -1169,7 +1140,7 @@ class SystemOverview:
                         bp_index = start_idx + i
                         bp = backplane_list[bp_index] if bp_index < len(backplane_list) else None
                         card_widget = SmlPlaceHolderCard(bp_index, bp, position)
-                        card_widget.classes(add="bp-rotatable" + (" flip-180" if self.should_flip_backplane(bp_index) else ""))
+                        card_widget.classes(add="bp-rotatable" + (" flip-180" if globals.layoutState.chassis_is_inverted() else ""))
                         if bp:
                             self.setup_backplane_buttons(card_widget, bp, bp_index)
                         else:
@@ -1178,7 +1149,7 @@ class SystemOverview:
                     # Empty STD cards
                     for i, position in enumerate(layout_config["backplane_positions"]):
                         card_widget = StdPlaceHolderCard(i, None, position)
-                        card_widget.classes(add="bp-rotatable" + (" flip-180" if self.should_flip_backplane(i) else ""))
+                        card_widget.classes(add="bp-rotatable" + (" flip-180" if globals.layoutState.chassis_is_inverted() else ""))
                         self.add_backplane_button(card_widget, StdPlaceHolderCard)
 
                     # Empty SML cards
@@ -1186,7 +1157,7 @@ class SystemOverview:
                     for i, position in enumerate(layout_config["small_positions"]):
                         idx = start_idx + i
                         card_widget = SmlPlaceHolderCard(idx, None, position)
-                        card_widget.classes(add="bp-rotatable" + (" flip-180" if self.should_flip_backplane(idx) else ""))
+                        card_widget.classes(add="bp-rotatable" + (" flip-180" if globals.layoutState.chassis_is_inverted() else ""))
                         self.add_backplane_button(card_widget, SmlPlaceHolderCard)
 
     def show_chassis_selection_dialog(self, main_content):
@@ -1219,7 +1190,9 @@ class SystemOverview:
         """Create the main UI."""
         with page_layout.frame('System Overview'):
             with ui.element('div').classes('flex w-full').style('justify-content: safe center;'):
-                with ui.element('div').classes('pseudo-extend') as main_content:
+                # Apply appropriate CSS class based on chassis orientation
+                css_class = 'pseudo-extend-inverted' if globals.layoutState.chassis_is_inverted() else 'pseudo-extend'
+                with ui.element('div').classes(css_class) as main_content:
                     current_chassis = globals.layoutState.get_product()
 
                     if current_chassis is None:

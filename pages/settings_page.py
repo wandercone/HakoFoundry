@@ -256,7 +256,7 @@ def settingsPage():
             with ui.card():
                 # Chassis Layout Section
                 ui.label('Chassis Configuration').classes('text-xl font-bold mb-4')
-                with ui.grid(columns=2).classes('gap-0').style('grid-auto-rows: 1fr;'):
+                with ui.grid(columns=2).classes('gap-0 w-full').style('grid-auto-rows: 1fr;'):
                     ui.label('Chassis Layout:').classes('flex justify-start items-center')
                     product_select = ui.select(
                         ['Hako-Core', 'Hako-Core Mini'],
@@ -270,19 +270,24 @@ def settingsPage():
                     ui.label('Show drive serial #:').classes('flex justify-start items-center')
                     ui_refs['sn_switch'] = ui.switch(value=globals.layoutState.get_sn_display(), on_change=lambda e: change_sn_display(e.value)).style('justify-content:end;')
 
-                    ui.label('Chassis orientation:').classes('flex justify-start items-center')
+                    ui.label('Invert chassis orientation:').classes('flex justify-start items-center')
                     orientation_switch = ui.switch(
-                        text='Inverted',
-                        value=globals.layoutState.get_chassis_orientation() == "inverted",
-                        on_change=lambda e: globals.layoutState.set_chassis_orientation("inverted" if e.value else "normal")
+                        value=globals.layoutState.chassis_is_inverted(),
+                        on_change=lambda e: globals.layoutState.set_chassis_inverted(e.value)
                     ).style('justify-content:end;')
                     orientation_switch.tooltip('Toggle if your chassis is physically mounted inverted')
 
                     ui.label('Temperature Units:').classes('flex justify-start items-center')
+                    # Map display names to backend values
+                    unit_options = {'Celsius (C°)': 'C', 'Fahrenheit (F°)': 'F'}
+                    current_unit = globals.layoutState.get_units()
+                    # Find the display name for the current value
+                    current_display = next((k for k, v in unit_options.items() if v == current_unit), 'Celsius (C°)')
+                    
                     ui.select(
-                        ['C', 'F'],
-                        value=globals.layoutState.get_units(),
-                        on_change=lambda e: globals.layoutState.set_units(e.value)
+                        list(unit_options.keys()),
+                        value=current_display,
+                        on_change=lambda e: globals.layoutState.set_units(unit_options[e.value])
                     ).style('justify-content:end;')
 
                 ui.separator().classes('my-4')
@@ -312,7 +317,7 @@ def settingsPage():
                         'Clear All Backplanes',
                         on_click=clear_all_backplanes,
                         icon='delete_sweep'
-                    ).classes('border-solid border-2 border-red-500 text-red-500 px-6 py-2').props('flat')
+                    ).classes('bg-red-500 text-white px-6 py-2').props('flat')
                     ui.label('Remove all backplanes and drive assignments').classes('text-xs text-gray-500 ml-2 self-center')
 
                 ui.separator().classes('mb-6')

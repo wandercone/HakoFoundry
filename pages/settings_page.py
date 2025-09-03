@@ -257,6 +257,10 @@ def settingsPage():
                 # Chassis Layout Section
                 ui.label('Chassis Configuration').classes('text-xl font-bold mb-4')
                 with ui.grid(columns=2).classes('gap-0 w-full').style('grid-auto-rows: 1fr;'):
+                    # Allow Custom Chassis Naming
+                    ui.label('Chassis Name:').classes('flex justify-start items-center')
+                    ui_refs['chassis_name_input'] = ui.input(value=globals.layoutState.get_chassis_name(),placeholder='Enter chassis name...',on_change=lambda e: change_chassis_name(e.value)).style('justify-content:end;')
+                    
                     ui.label('Chassis Layout:').classes('flex justify-start items-center')
                     product_select = ui.select(
                         ['Hako-Core', 'Hako-Core Mini'],

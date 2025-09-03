@@ -41,4 +41,7 @@ if __name__ == '__mp_main__':
     # No authentication provided, open site
     authentication.validate_environment()
 
-ui.run(title="Hako Foundry", favicon="res/Hako_Logo.png", dark=True, storage_secret=hashlib.sha256(os.getenv('SECRET').encode()).hexdigest())
+
+chassis_name = globals.layoutState.get_chassis_name()
+title = f"{chassis_name}" if chassis_name else "Hako Foundry"
+ui.run(title=title,favicon="res/Hako_Logo.png",dark=True,storage_secret=hashlib.sha256(os.getenv('SECRET').encode()).hexdigest())
